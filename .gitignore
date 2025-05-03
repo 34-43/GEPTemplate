@@ -1,0 +1,36 @@
+﻿# Binaries, Intermediate, Saved 폴더
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Visual Studio
+*.sdf
+*.opensdf
+*.VC.db
+.vs/
+*.suo
+*.user
+
+# Rider
+.idea/
+*.sln.iml
+
+# backup
+*.backup
+*~
+
+# Xcode
+*.xcworkspace
+*.xcuserdata
+*.xcodeproj/project.xcworkspace
+
+# Windows
+*.pdb
+
+# Mac
+.DS_Store
+
+# Git LFS 트래킹 (예: 에셋 파일)
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap  filter=lfs diff=lfs merge=lfs -text
