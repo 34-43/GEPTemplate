@@ -20,7 +20,7 @@ AMainCharacter::AMainCharacter()
 
 	// 메시 설정
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMesh(
-		TEXT("/Game/Features/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin"));
+		TEXT("/Game/Features/Mannequin/Character/rp_manuel_rigged_001_ue4/rp_manuel_rigged_001_ue4.rp_manuel_rigged_001_ue4"));
 	MeshC->SetRelativeLocation(FVector(0, 0, -90));
 	MeshC->SetRelativeRotation(FRotator(0, -90, 0));
 	if (SkeletalMesh.Succeeded()) { MeshC->SetSkeletalMesh(SkeletalMesh.Object); }
@@ -33,9 +33,10 @@ AMainCharacter::AMainCharacter()
 	// 카메라 설정
 	SpringArmC = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	SpringArmC->SetupAttachment(RootComponent);
-	SpringArmC->TargetArmLength = 400.0f;
+	SpringArmC->TargetArmLength = 330.0f;
 	CameraC = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraC->SetRelativeLocation(FVector(0, 70, 90));
+	CameraC->SetRelativeLocation(FVector(0, 50, 0));
+	CameraC->SetRelativeRotation(FRotator(12,0,0));
 	CameraC->SetupAttachment(SpringArmC);
 
 	// 카메라 회전 설정
@@ -69,6 +70,12 @@ AMainCharacter::AMainCharacter()
 
 	// 전투 컴포넌트 설정
 	CombatC = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontage(
+		TEXT("/Game/Features/Mannequin/Animations/AttackMontage.AttackMontage"));
+	if (AttackMontage.Succeeded()) { CombatC->AttackMontage = AttackMontage.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> RollMontage(
+		TEXT("/Game/Features/Mannequin/Animations/RollMontage.RollMontage"));
+	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
 
 	// 불릿 팩토리 설정
 	static ConstructorHelpers::FClassFinder<ABaseBullet> BaseBulletBP(

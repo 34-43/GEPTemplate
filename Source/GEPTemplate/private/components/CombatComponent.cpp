@@ -2,18 +2,14 @@
 
 #include "GEPTemplate.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	CombatState = ECombatState::Idle;
-
-	// todo: 뭔가 오류남
-	// static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontageAsset(
-	// 	TEXT("/Game/Features/Mannequin/Animations/AttackMontage.AttackMontage"));
-	// if (AttackMontageAsset.Succeeded()) { AttackMontage = AttackMontageAsset.Object; }
+	CombatState = ECombatState::IdleMoving;
 }
 
 
@@ -30,39 +26,65 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
-void UCombatComponent::SetCombatState(const ECombatState NewState) { CombatState = NewState; }
+void UCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (CombatState == ECombatState::Rolling)
+	{
+		if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+		{
+			const FVector Delta = Char->GetActorForwardVector() * RollSpeed * DeltaTime;
+			Char->AddMovementInput(Delta);
+		}
+	}
+}
+
+
+void UCombatComponent::SetCombatState(const ECombatState NewState)
+{
+	CombatState = NewState;
+	PRINT_LOG(TEXT("CombatState : %i"), CombatState)
+}
 
 void UCombatComponent::Attack()
 {
 	// 유휴, 이동 이외의 상태일 경우 공격 불가능
-	if (CombatState > ECombatState::Moving) return;
+	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Attacking);
-	// 공격 몽타주 설정
-	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->PlayAnimMontage(AttackMontage); }
+
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		if (UAnimInstance* AnimInst = Char->GetMesh()->GetAnimInstance())
+		{
+			AnimInst->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+		}
+
+		Char->PlayAnimMontage(AttackMontage);
+	}
 }
 
 void UCombatComponent::Roll()
 {
 	// 유휴, 이동 이외의 상태일 경우 회피 불가능
-	if (CombatState > ECombatState::Moving) return;
+	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Rolling);
 	// 구르기 몽타주 설정
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		Char->PlayAnimMontage(RollMontage);
-		// Char->SetActorEnableCollision(false); //구르기와 동시에 무적 시작
 	}
-	// 무적시간 종료 타이머 설정
-	// GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, [this]()
-	// {
-	// 	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->SetActorEnableCollision(true); }
-	// }, RollAvoidTime, false);
+	// 무적시간 종료 타이머
+	GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, [this]()
+	{
+		SetCombatState(ECombatState::BufferTime);
+	}, RollAvoidTime, false);
 }
 
 void UCombatComponent::Parry()
 {
 	// 유휴, 이동 이외의 상태일 경우 패링 불가능
-	if (CombatState > ECombatState::Moving) return;
+	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Parrying);
 	// 패링 몽타주 설정
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->PlayAnimMontage(ParryMontage); }
@@ -71,8 +93,16 @@ void UCombatComponent::Parry()
 
 void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == AttackMontage) { PerformAttackTrace(); } // 왜 끝날 때 하는 지는 모름.
-	SetCombatState(ECombatState::Idle);
+	if (UAnimInstance* AnimInst = Cast<UAnimInstance>(Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance()))
+	{
+		AnimInst->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
+	}
+
+	if (Montage == AttackMontage)
+	{
+		PerformAttackTrace();
+	}
+	SetCombatState(ECombatState::IdleMoving);
 }
 
 void UCombatComponent::PerformAttackTrace() const
@@ -100,12 +130,18 @@ void UCombatComponent::Damage(float Damage, const FVector& DamageDirection)
 	// 패링 성공 시
 	if (CombatState == ECombatState::Parrying)
 	{
-		PRINT_LOG(TEXT("패링 성공!!"));
-		SetCombatState(ECombatState::Idle);
+		PRINT_LOG(TEXT("퍼펙트 패링!!"));
+		SetCombatState(ECombatState::IdleMoving);
+	}
+
+	if (CombatState == ECombatState::Rolling)
+	{
+		PRINT_LOG(TEXT("퍼펙트 위빙!!"));
+		SetCombatState(ECombatState::IdleMoving);
 	}
 
 	SetCombatState(ECombatState::Stunned);
 	GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, this, &UCombatComponent::EndStun, StunOnDamageTime, false);
 }
 
-void UCombatComponent::EndStun() { SetCombatState(ECombatState::Idle); }
+void UCombatComponent::EndStun() { SetCombatState(ECombatState::IdleMoving); }

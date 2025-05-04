@@ -8,8 +8,8 @@
 UENUM(BlueprintType)
 enum class ECombatState : uint8
 {
-	Idle,
-	Moving,
+	IdleMoving,
+	BufferTime,
 	Attacking,
 	Rolling,
 	Parrying,
@@ -26,7 +26,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 public:
 	// 현재 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly) ECombatState CombatState;
@@ -39,7 +40,8 @@ public:
 	// 전투 능력치
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float AttackRange = 150.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float AttackDamage = 25.0f;
-	UPROPERTY(EditDefaultsOnly, Category = "Combat") float RollAvoidTime = 150.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat") float RollSpeed = 250.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat") float RollAvoidTime = 0.2f;
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float StunOnDamageTime = 0.3f;
 
 	// 상호작용
