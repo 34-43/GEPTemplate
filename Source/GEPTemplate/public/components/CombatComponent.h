@@ -34,6 +34,7 @@ public:
 
 	// 애니메이션
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* AttackMontage;
+	UPROPERTY(EditDefaultsOnly, Category = "Animation") TArray<FName> AttackMontageSections;
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* RollMontage;
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* ParryMontage;
 

@@ -73,6 +73,7 @@ AMainCharacter::AMainCharacter()
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontage(
 		TEXT("/Game/Features/Mannequin/Animations/AttackMontage.AttackMontage"));
 	if (AttackMontage.Succeeded()) { CombatC->AttackMontage = AttackMontage.Object; }
+	CombatC->AttackMontageSections = { FName("1"), FName("2"), FName("3"), FName("4") };
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> RollMontage(
 		TEXT("/Game/Features/Mannequin/Animations/RollMontage.RollMontage"));
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }

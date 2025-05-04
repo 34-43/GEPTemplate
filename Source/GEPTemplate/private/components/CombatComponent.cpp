@@ -26,7 +26,8 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
-void UCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+                                     FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -49,19 +50,49 @@ void UCombatComponent::SetCombatState(const ECombatState NewState)
 
 void UCombatComponent::Attack()
 {
-	// 유휴, 이동 이외의 상태일 경우 공격 불가능
-	if (CombatState != ECombatState::IdleMoving) return;
-	SetCombatState(ECombatState::Attacking);
-
-	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	// AnimInst 레퍼런스 준비
+	UAnimInstance* AnimInst = nullptr;
+	if (const ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
-		if (UAnimInstance* AnimInst = Char->GetMesh()->GetAnimInstance())
+		AnimInst = Char->GetMesh()->GetAnimInstance();
+	}
+	
+	// 기본 상태에서 첫 동작 재생
+	if (CombatState == ECombatState::IdleMoving)
+	{
+		SetCombatState(ECombatState::Attacking);
+
+		if (AnimInst)
 		{
 			AnimInst->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+			AnimInst->Montage_JumpToSection(AttackMontageSections[0], AttackMontage);
+			AnimInst->Montage_Play(AttackMontage);
 		}
-
-		Char->PlayAnimMontage(AttackMontage);
 	}
+	// 조건이 맞으면 콤보 큐를 설정함
+	else if (CombatState == ECombatState::Attacking && AnimInst)
+	{
+		if (AnimInst->Montage_IsPlaying(AttackMontage))
+		{
+			FName PlayingSection = AnimInst->Montage_GetCurrentSection(AttackMontage);
+			int32 PlayingIndex = AttackMontageSections.Find(PlayingSection);
+
+			if (PlayingIndex != INDEX_NONE && PlayingIndex < AttackMontageSections.Num() - 1)
+			{
+				float Start, End;
+				AttackMontage->GetSectionStartAndEndTime(PlayingIndex, Start, End);
+				float Pos = AnimInst->Montage_GetPosition(AttackMontage);
+
+				PRINT_LOG(TEXT("Start: %f / End: %f / Pos : %f"), Start, End, Pos);
+				
+				if (abs(End - Pos) < 0.5f)
+				{
+					AnimInst->Montage_SetNextSection(PlayingSection, AttackMontageSections[PlayingIndex + 1], AttackMontage);
+				}
+			}
+		}
+	}
+
 }
 
 void UCombatComponent::Roll()
