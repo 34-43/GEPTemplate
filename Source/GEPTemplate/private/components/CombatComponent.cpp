@@ -2,7 +2,7 @@
 
 #include "GEPTemplate.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "DrawDebugHelpers.h"
 
 
 UCombatComponent::UCombatComponent()
@@ -56,7 +56,7 @@ void UCombatComponent::Attack()
 	{
 		AnimInst = Char->GetMesh()->GetAnimInstance();
 	}
-	
+
 	// 기본 상태에서 첫 동작 재생
 	if (CombatState == ECombatState::IdleMoving)
 	{
@@ -84,15 +84,15 @@ void UCombatComponent::Attack()
 				float Pos = AnimInst->Montage_GetPosition(AttackMontage);
 
 				PRINT_LOG(TEXT("Start: %f / End: %f / Pos : %f"), Start, End, Pos);
-				
+
 				if (abs(End - Pos) < 0.5f)
 				{
-					AnimInst->Montage_SetNextSection(PlayingSection, AttackMontageSections[PlayingIndex + 1], AttackMontage);
+					AnimInst->Montage_SetNextSection(PlayingSection, AttackMontageSections[PlayingIndex + 1],
+					                                 AttackMontage);
 				}
 			}
 		}
 	}
-
 }
 
 void UCombatComponent::Roll()
@@ -128,29 +128,54 @@ void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	{
 		AnimInst->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
 	}
-
-	if (Montage == AttackMontage)
-	{
-		PerformAttackTrace();
-	}
 	SetCombatState(ECombatState::IdleMoving);
 }
 
-void UCombatComponent::PerformAttackTrace() const
+void UCombatComponent::PerformAttackSweep() const
 {
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
-		FVector StartLocation = Char->GetActorLocation() + FVector(0, 0, 50);
-		FVector EndLocation = StartLocation + Char->GetActorForwardVector() * AttackRange;
-		FHitResult Hit;
-		FCollisionQueryParams Params(NAME_None, false, Char);
+		// FVector StartLocation = Char->GetActorLocation() + FVector(0, 0, 50);
+		// FVector EndLocation = StartLocation + Char->GetActorForwardVector() * AttackRange;
+		// FHitResult Hit;
+		// FCollisionQueryParams Params(NAME_None, false, Char);
 
-		// 같은 전투 컴포넌트 사용자 간 데미지 계산
-		if (Char->GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Pawn, Params))
+		// if (Char->GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Pawn, Params))
+		// {
+		// if (UCombatComponent* Other = Hit.GetActor()->FindComponentByClass<UCombatComponent>())
+		// {
+		// PRINT_LOG(TEXT("공격 적중함"));
+		// Other->Damage(AttackDamage, Char->GetActorForwardVector());
+		// }
+		// }
+
+		FVector Start = Char->GetActorLocation();
+		const FVector Forward = Char->GetActorForwardVector();
+		FVector End = Start + Forward * 180.0f;
+
+		const FCollisionShape Capsule = FCollisionShape::MakeCapsule(50.0f, 50.0f);
+		FCollisionQueryParams Params(NAME_None, false, Char);
+		TArray<FHitResult> HitResults;
+		bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel3,
+		                                            Capsule, Params);
+
+#if ENABLE_DRAW_DEBUG
+		const FColor C = bHit ? FColor::Red : FColor::Green;
+		DrawDebugCapsule(GetWorld(), Start, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		DrawDebugCapsule(GetWorld(), End, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		DrawDebugLine(GetWorld(), Start, End, C.WithAlpha(0.3f), false, 1.0f, 0, 2.0f);
+#endif
+
+		for (auto& Hit : HitResults)
 		{
-			if (UCombatComponent* Other = Hit.GetActor()->FindComponentByClass<UCombatComponent>())
+			if (Hit.Actor.IsValid()) { PRINT_LOG(TEXT("Hit Actor Name : %s"), *Hit.Actor->GetName()); }
+			if (const AActor* HitActor = Hit.GetActor())
 			{
-				Other->Damage(AttackDamage, Char->GetActorForwardVector());
+				if (UCombatComponent* HitCombatC = HitActor->FindComponentByClass<UCombatComponent>())
+				{
+					HitCombatC->Damage(AttackDamage, Forward);
+					PRINT_LOG(TEXT("공격 전달됨"));
+				}
 			}
 		}
 	}

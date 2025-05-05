@@ -50,12 +50,12 @@ public:
 	void Roll();
 	void Parry();
 	void Damage(float Damage, const FVector& DamageDirection);
+	void PerformAttackSweep() const;
 
 private:
 	//로직
 	FTimerHandle StateTimerHandle;
 	void SetCombatState(ECombatState NewState);
-	void PerformAttackTrace() const;
 
 	// 델리게이트
 	UFUNCTION() void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);

@@ -23,9 +23,10 @@ public:
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = Camera) class USpringArmComponent* SpringArmC;
 	UPROPERTY(VisibleAnywhere, Category = Camera) class UCameraComponent* CameraC;
-	UPROPERTY(VisibleAnywhere, Category = GunMesh) USkeletalMeshComponent* GunMeshC;
-	UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
+	// UPROPERTY(VisibleAnywhere, Category = GunMesh) USkeletalMeshComponent* GunMeshC;
+	// UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Combat) class UCombatComponent* CombatC;
+	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 
 	// 팩토리
 	UPROPERTY(EditDefaultsOnly, Category = BulletFactory) TSubclassOf<class ABaseBullet> BulletF;
@@ -38,16 +39,16 @@ public:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void InputJump();
-	void InputFire();
-	void InputChangeGrenadeGun();
-	void InputChangeSniperGun();
-	void InputSniperAim();
+	// void InputFire();
+	// void InputChangeGrenadeGun();
+	// void InputChangeSniperGun();
+	// void InputSniperAim();
 
 private:
 	// 로직
 	FVector2D InputDirection = FVector2D::ZeroVector;
-	bool bUsingGrenadeGun = true;
-	bool bSniperAim = false;
-	UUserWidget* _sniperUI;
+	// bool bUsingGrenadeGun = true;
+	// bool bSniperAim = false;
+	// UUserWidget* _sniperUI;
 	void TickMovement();
 };
