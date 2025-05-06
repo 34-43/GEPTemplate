@@ -11,12 +11,13 @@
 #include "components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
+#include "allies/MinimapCaptureActor.h"       // AMinimapCaptureActor 헤더 포함
 
 
 AMainCharacter::AMainCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	// 기본 메시 포인터 로드
 	USkeletalMeshComponent* MeshC = GetMesh();
 
@@ -114,6 +115,8 @@ void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+    InitializeMiniMap(); // 미니맵 생성 함수 호출
+	
 	// _sniperUI = CreateWidget(GetWorld(), SniperUiF);
 	// InputChangeSniperGun();
 }
@@ -212,4 +215,33 @@ void AMainCharacter::TickMovement()
 	InputDirection = InputDirection.GetRotated(GetControlRotation().Yaw);
 	const FVector MoveDirection = FVector(InputDirection.X, InputDirection.Y, 0);
 	AddMovementInput(MoveDirection);
+}
+
+// 미니맵 생성 함수
+void AMainCharacter::InitializeMiniMap()
+{
+    // 미니맵 1. 미니맵 위젯 생성
+    if (MiniMapWidgetClass)
+    {
+        MiniMapWidget = CreateWidget<UUserWidget>(GetWorld(), MiniMapWidgetClass);
+        if (MiniMapWidget)
+        {
+            MiniMapWidget->AddToViewport();
+        }
+    }
+
+    // 미니맵 2. 월드에서 MinimapCaptureActor를 찾는다
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMinimapCaptureActor::StaticClass(), FoundActors);
+
+    if (FoundActors.Num() > 0)
+    {
+        AMinimapCaptureActor* MinimapActor = Cast<AMinimapCaptureActor>(FoundActors[0]);
+        if (MinimapActor)
+        {
+            MinimapActor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+            MinimapActor->SetActorRelativeLocation(FVector(0.f, 0.f, 2000.f));
+            MinimapActor->SetActorRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+        }
+    }
 }
