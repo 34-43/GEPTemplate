@@ -5,11 +5,14 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "allies/BaseBullet.h"
+#include "allies/GameAlertUIWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "allies/MinimapCaptureActor.h"       // AMinimapCaptureActor 헤더 포함
+#include "allies/PlayerHUDWidget.h"
+#include "Components/TextBlock.h"
 
 
 AMainCharacter::AMainCharacter()
@@ -97,7 +100,19 @@ void AMainCharacter::BeginPlay()
 	Super::BeginPlay();
 
     InitializeMiniMap(); // 미니맵 생성 함수 호출
+	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
+	InitializeGameAlert(); // 유저 상태 생성 함수 호출
 
+	// 스태미너 회복 로직
+	GetWorldTimerManager().SetTimer(
+		StaminaRecoveryTimer,
+		this,
+		&AMainCharacter::RecoverStamina,
+		1.0f,
+		true,
+		2.0f
+	);
+	
 	_sniperUI = CreateWidget(GetWorld(), SniperUiF);
 	InputChangeSniperGun();
 }
@@ -133,7 +148,29 @@ void AMainCharacter::Turn(const float Value) { AddControllerYawInput(Value); }
 void AMainCharacter::LookUp(const float Value) { AddControllerPitchInput(Value); }
 void AMainCharacter::MoveForward(const float Value) { InputDirection.X = Value; }
 void AMainCharacter::MoveRight(const float Value) { InputDirection.Y = Value; }
-void AMainCharacter::InputJump() { Jump(); }
+void AMainCharacter::InputJump()
+{
+	if (CurrentStamina >= 10.f)
+	{
+		Super::Jump();
+
+		ManageStamina(-10.f); // 딱 10만 줄인다
+
+		// 회복 재설정
+		GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
+		GetWorldTimerManager().SetTimer(
+			StaminaRecoveryTimer,
+			this,
+			&AMainCharacter::RecoverStamina,
+			1.0f,
+			true
+		);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Not enough stamina to jump!"));
+	}
+}
 
 void AMainCharacter::InputFire()
 {
@@ -220,9 +257,92 @@ void AMainCharacter::InitializeMiniMap()
         AMinimapCaptureActor* MinimapActor = Cast<AMinimapCaptureActor>(FoundActors[0]);
         if (MinimapActor)
         {
-            MinimapActor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
-            MinimapActor->SetActorRelativeLocation(FVector(0.f, 0.f, 2000.f));
-            MinimapActor->SetActorRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+        	MinimapActor->SetActorLocation(GetActorLocation() + FVector(0.f, 0.f, 2000.f));
+        	MinimapActor->SetActorRotation(FRotator(-90.f, 0.f, 0.f));
         }
     }
 }
+
+void AMainCharacter::InitializePlayerHUD()
+{
+	if (PlayerHUDClass)
+	{
+		PlayerHUDWidget = CreateWidget<UUserWidget>(GetWorld(), PlayerHUDClass);
+		if (PlayerHUDWidget)
+		{
+			PlayerHUDWidget->AddToViewport();
+
+			// 처음 상태 반영
+			if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+			{
+				PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
+				PlayerHUD->SetStamina(CurrentStamina / MaxStamina);
+				PlayerHUD->SetGold(CurrentGold);
+			}
+		}
+	}
+}
+
+void AMainCharacter::InitializeGameAlert()
+{
+	if (GameAlertUIClass)
+	{
+		GameAlertUIWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUIClass);
+		if (GameAlertUIWidget)
+		{
+			GameAlertUIWidget->AddToViewport();
+			GameAlertUIWidget->SetVisibility(ESlateVisibility::Hidden); // 처음엔 숨김
+		}
+	}
+}
+
+void AMainCharacter::ManageHealth(float Delta)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth + Delta, 0.0f, MaxHealth);
+
+	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+	{
+		PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
+	}
+
+	if (CurrentHealth <= 0.0f)
+	{
+		ShowDeathUI();
+	}
+}
+
+void AMainCharacter::ManageStamina(float Delta)
+{
+	CurrentStamina = FMath::Clamp(CurrentStamina + Delta, 0.f, MaxStamina);
+
+	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+	{
+		PlayerHUD->SetStamina(CurrentStamina / MaxStamina);
+	}
+}
+
+void AMainCharacter::RecoverStamina()
+{
+	ManageStamina(StaminaRecoveryRate);
+}
+
+void AMainCharacter::ManageGold(int32 Delta)
+{
+	// 나중에 골드 음수 처리해야 할듯, 구매 못하게
+	CurrentGold = FMath::Max(0, CurrentGold + Delta);
+
+	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+	{
+		PlayerHUD->SetGold(CurrentGold);
+	}
+}
+
+void AMainCharacter::ShowDeathUI()
+{
+	if (UGameAlertUIWidget* AlertUI = Cast<UGameAlertUIWidget>(GameAlertUIWidget))
+	{
+		AlertUI->SetVisibility(ESlateVisibility::Visible);
+		AlertUI->PlayAlert(TEXT("LOTUS WITHERED"), FLinearColor::Red);
+	}
+}
+
