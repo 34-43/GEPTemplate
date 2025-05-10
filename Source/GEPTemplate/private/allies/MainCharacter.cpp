@@ -98,16 +98,24 @@ AMainCharacter::AMainCharacter()
 		TEXT("/Game/Blueprints/BP_BaseBullet.BP_BaseBullet_C"));
 	if (BaseBulletBP.Succeeded()) { BulletF = BaseBulletBP.Class; }
 
-	// 스나이퍼 UI 팩토리 설정
-	static ConstructorHelpers::FClassFinder<UUserWidget> SniperUiBP(
-		TEXT("/Game/UI/BP_SniperUi.BP_SniperUi_C"));
-	if (SniperUiBP.Succeeded()) { SniperUiF = SniperUiBP.Class; }
-
 	// 불릿 이펙트 팩토리 설정
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> BulletEffect(
 		TEXT("/Game/StarterContent/Particles/P_BulletEffect.P_BulletEffect"));
 	if (BulletEffect.Succeeded()) { BulletEffectF = BulletEffect.Object; }
 
+	// 스나이퍼 UI 설정
+	// static ConstructorHelpers::FClassFinder<UUserWidget> SniperUiBP(
+	// 	TEXT("/Game/UI/BP_SniperUi.BP_SniperUi_C"));
+	// if (SniperUiBP.Succeeded()) { SniperUI_W = SniperUiBP.Class; }
+
+	// UI 클래스 설정
+	static ConstructorHelpers::FClassFinder<UUserWidget> MiniMap(TEXT("/Game/UI/WBP_Minimap.WBP_Minimap_C"));
+	if (MiniMap.Succeeded()) { MiniMapW = MiniMap.Class; }
+	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerHUD(TEXT("/Game/UI/WBP_PlayerHUD.WBP_PlayerHUD_C"));
+	if (PlayerHUD.Succeeded()) { PlayerHUD_W = PlayerHUD.Class; }
+	static ConstructorHelpers::FClassFinder<UUserWidget> GameAlert(TEXT("/Game/UI/WBP_GameAlertUI.WBP_GameAlertUI_C"));
+	if (GameAlert.Succeeded()) { GameAlertUI_W = GameAlert.Class; }
+	
 	// 점프 수치 설정
 	const auto CharMoveC = GetCharacterMovement();
 	CharMoveC->JumpZVelocity = 500.0f;
@@ -258,9 +266,9 @@ void AMainCharacter::TickMovement()
 void AMainCharacter::InitializeMiniMap()
 {
     // 미니맵 1. 미니맵 위젯 생성
-    if (MiniMapWidgetClass)
+    if (MiniMapW)
     {
-        MiniMapWidget = CreateWidget<UUserWidget>(GetWorld(), MiniMapWidgetClass);
+        MiniMapWidget = CreateWidget<UUserWidget>(GetWorld(), MiniMapW);
         if (MiniMapWidget)
         {
             MiniMapWidget->AddToViewport();
@@ -284,9 +292,9 @@ void AMainCharacter::InitializeMiniMap()
 
 void AMainCharacter::InitializePlayerHUD()
 {
-	if (PlayerHUDClass)
+	if (PlayerHUD_W)
 	{
-		PlayerHUDWidget = CreateWidget<UUserWidget>(GetWorld(), PlayerHUDClass);
+		PlayerHUDWidget = CreateWidget<UUserWidget>(GetWorld(), PlayerHUD_W);
 		if (PlayerHUDWidget)
 		{
 			PlayerHUDWidget->AddToViewport();
@@ -304,9 +312,9 @@ void AMainCharacter::InitializePlayerHUD()
 
 void AMainCharacter::InitializeGameAlert()
 {
-	if (GameAlertUIClass)
+	if (GameAlertUI_W)
 	{
-		GameAlertUIWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUIClass);
+		GameAlertUIWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUI_W);
 		if (GameAlertUIWidget)
 		{
 			GameAlertUIWidget->AddToViewport();
