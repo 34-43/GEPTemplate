@@ -5,6 +5,7 @@ Intermediate/
 Saved/
 
 # Visual Studio
+*.sln
 *.sdf
 *.opensdf
 *.VC.db
@@ -30,7 +31,3 @@ Saved/
 
 # Mac
 .DS_Store
-
-# Git LFS 트래킹 (예: 에셋 파일)
-*.uasset filter=lfs diff=lfs merge=lfs -text
-*.umap  filter=lfs diff=lfs merge=lfs -text
