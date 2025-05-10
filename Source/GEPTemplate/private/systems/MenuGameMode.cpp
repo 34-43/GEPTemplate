@@ -2,6 +2,9 @@
 
 
 #include "systems/MenuGameMode.h"
+
+#include "GEPTemplate.h"
+#include "GEPTemplateGameModeBase.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
@@ -9,6 +12,9 @@
 AMenuGameMode::AMenuGameMode()
 {
 	// 기본 생성자
+	static ConstructorHelpers::FClassFinder<AGEPTemplateGameModeBase> MainGameModeClass(
+		TEXT("/Game/Blueprints/BP_GEPTemplateGameModeBase.BP_GEPTemplateGameModeBase_C"));
+	if (MainGameModeClass.Succeeded()) { GameModeToStart = MainGameModeClass.Class; }
 }
 
 void AMenuGameMode::BeginPlay()
@@ -60,7 +66,9 @@ void AMenuGameMode::StartGame()
 	if (GameModeToStart)
 	{
 		// 게임 모드를 설정하고, 새로운 레벨을 로드합니다.
-		UGameplayStatics::OpenLevel(GetWorld(), "TemplateMap", true, FString(TEXT("GameMode=")) + GameModeToStart->GetName());
+		const FString Options = FString::Printf(TEXT("?game=%s"), *GameModeToStart->GetPathName());
+		UGameplayStatics::OpenLevel(GetWorld(), "TemplateMap", true, *Options);
+		PRINT_LOG(TEXT("%s"), *Options);
 	}
 
 	// 게임 입력 모드 + 마우스 커서 숨기기 (시작할 때 바로 적용)
