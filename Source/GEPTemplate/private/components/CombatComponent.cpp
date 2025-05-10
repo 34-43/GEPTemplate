@@ -2,18 +2,14 @@
 
 #include "GEPTemplate.h"
 #include "GameFramework/Character.h"
+#include "DrawDebugHelpers.h"
 
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	CombatState = ECombatState::Idle;
-
-	// todo: 뭔가 오류남
-	// static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontageAsset(
-	// 	TEXT("/Game/Features/Mannequin/Animations/AttackMontage.AttackMontage"));
-	// if (AttackMontageAsset.Succeeded()) { AttackMontage = AttackMontageAsset.Object; }
+	CombatState = ECombatState::IdleMoving;
 }
 
 
@@ -30,39 +26,96 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
-void UCombatComponent::SetCombatState(const ECombatState NewState) { CombatState = NewState; }
+void UCombatComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+                                     FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (CombatState == ECombatState::Rolling)
+	{
+		if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+		{
+			const FVector Delta = Char->GetActorForwardVector() * RollSpeed * DeltaTime;
+			Char->AddMovementInput(Delta);
+		}
+	}
+}
+
+
+void UCombatComponent::SetCombatState(const ECombatState NewState)
+{
+	CombatState = NewState;
+	PRINT_LOG(TEXT("CombatState : %i"), CombatState)
+}
 
 void UCombatComponent::Attack()
 {
-	// 유휴, 이동 이외의 상태일 경우 공격 불가능
-	if (CombatState > ECombatState::Moving) return;
-	SetCombatState(ECombatState::Attacking);
-	// 공격 몽타주 설정
-	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->PlayAnimMontage(AttackMontage); }
+	// AnimInst 레퍼런스 준비
+	UAnimInstance* AnimInst = nullptr;
+	if (const ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		AnimInst = Char->GetMesh()->GetAnimInstance();
+	}
+
+	// 기본 상태에서 첫 동작 재생
+	if (CombatState == ECombatState::IdleMoving)
+	{
+		SetCombatState(ECombatState::Attacking);
+
+		if (AnimInst)
+		{
+			AnimInst->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+			AnimInst->Montage_JumpToSection(AttackMontageSections[0], AttackMontage);
+			AnimInst->Montage_Play(AttackMontage);
+		}
+	}
+	// 조건이 맞으면 콤보 큐를 설정함
+	else if (CombatState == ECombatState::Attacking && AnimInst)
+	{
+		if (AnimInst->Montage_IsPlaying(AttackMontage))
+		{
+			FName PlayingSection = AnimInst->Montage_GetCurrentSection(AttackMontage);
+			int32 PlayingIndex = AttackMontageSections.Find(PlayingSection);
+
+			if (PlayingIndex != INDEX_NONE && PlayingIndex < AttackMontageSections.Num() - 1)
+			{
+				float Start, End;
+				AttackMontage->GetSectionStartAndEndTime(PlayingIndex, Start, End);
+				float Pos = AnimInst->Montage_GetPosition(AttackMontage);
+
+				PRINT_LOG(TEXT("Start: %f / End: %f / Pos : %f"), Start, End, Pos);
+
+				if (abs(End - Pos) < 0.5f)
+				{
+					AnimInst->Montage_SetNextSection(PlayingSection, AttackMontageSections[PlayingIndex + 1],
+					                                 AttackMontage);
+				}
+			}
+		}
+	}
 }
 
 void UCombatComponent::Roll()
 {
 	// 유휴, 이동 이외의 상태일 경우 회피 불가능
-	if (CombatState > ECombatState::Moving) return;
+	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Rolling);
 	// 구르기 몽타주 설정
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
 		Char->PlayAnimMontage(RollMontage);
-		// Char->SetActorEnableCollision(false); //구르기와 동시에 무적 시작
 	}
-	// 무적시간 종료 타이머 설정
-	// GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, [this]()
-	// {
-	// 	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->SetActorEnableCollision(true); }
-	// }, RollAvoidTime, false);
+	// 무적시간 종료 타이머
+	GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, [this]()
+	{
+		SetCombatState(ECombatState::BufferTime);
+	}, RollAvoidTime, false);
 }
 
 void UCombatComponent::Parry()
 {
 	// 유휴, 이동 이외의 상태일 경우 패링 불가능
-	if (CombatState > ECombatState::Moving) return;
+	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Parrying);
 	// 패링 몽타주 설정
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner())) { Char->PlayAnimMontage(ParryMontage); }
@@ -71,25 +124,58 @@ void UCombatComponent::Parry()
 
 void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == AttackMontage) { PerformAttackTrace(); } // 왜 끝날 때 하는 지는 모름.
-	SetCombatState(ECombatState::Idle);
+	if (UAnimInstance* AnimInst = Cast<UAnimInstance>(Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance()))
+	{
+		AnimInst->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
+	}
+	SetCombatState(ECombatState::IdleMoving);
 }
 
-void UCombatComponent::PerformAttackTrace() const
+void UCombatComponent::PerformAttackSweep() const
 {
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
-		FVector StartLocation = Char->GetActorLocation() + FVector(0, 0, 50);
-		FVector EndLocation = StartLocation + Char->GetActorForwardVector() * AttackRange;
-		FHitResult Hit;
-		FCollisionQueryParams Params(NAME_None, false, Char);
+		// FVector StartLocation = Char->GetActorLocation() + FVector(0, 0, 50);
+		// FVector EndLocation = StartLocation + Char->GetActorForwardVector() * AttackRange;
+		// FHitResult Hit;
+		// FCollisionQueryParams Params(NAME_None, false, Char);
 
-		// 같은 전투 컴포넌트 사용자 간 데미지 계산
-		if (Char->GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Pawn, Params))
+		// if (Char->GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Pawn, Params))
+		// {
+		// if (UCombatComponent* Other = Hit.GetActor()->FindComponentByClass<UCombatComponent>())
+		// {
+		// PRINT_LOG(TEXT("공격 적중함"));
+		// Other->Damage(AttackDamage, Char->GetActorForwardVector());
+		// }
+		// }
+
+		FVector Start = Char->GetActorLocation();
+		const FVector Forward = Char->GetActorForwardVector();
+		FVector End = Start + Forward * 180.0f;
+
+		const FCollisionShape Capsule = FCollisionShape::MakeCapsule(50.0f, 50.0f);
+		FCollisionQueryParams Params(NAME_None, false, Char);
+		TArray<FHitResult> HitResults;
+		bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel3,
+		                                            Capsule, Params);
+
+#if ENABLE_DRAW_DEBUG
+		const FColor C = bHit ? FColor::Red : FColor::Green;
+		DrawDebugCapsule(GetWorld(), Start, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		DrawDebugCapsule(GetWorld(), End, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		DrawDebugLine(GetWorld(), Start, End, C.WithAlpha(0.3f), false, 1.0f, 0, 2.0f);
+#endif
+
+		for (auto& Hit : HitResults)
 		{
-			if (UCombatComponent* Other = Hit.GetActor()->FindComponentByClass<UCombatComponent>())
+			if (Hit.Actor.IsValid()) { PRINT_LOG(TEXT("Hit Actor Name : %s"), *Hit.Actor->GetName()); }
+			if (const AActor* HitActor = Hit.GetActor())
 			{
-				Other->Damage(AttackDamage, Char->GetActorForwardVector());
+				if (UCombatComponent* HitCombatC = HitActor->FindComponentByClass<UCombatComponent>())
+				{
+					HitCombatC->Damage(AttackDamage, Forward);
+					PRINT_LOG(TEXT("공격 전달됨"));
+				}
 			}
 		}
 	}
@@ -100,12 +186,18 @@ void UCombatComponent::Damage(float Damage, const FVector& DamageDirection)
 	// 패링 성공 시
 	if (CombatState == ECombatState::Parrying)
 	{
-		PRINT_LOG(TEXT("패링 성공!!"));
-		SetCombatState(ECombatState::Idle);
+		PRINT_LOG(TEXT("퍼펙트 패링!!"));
+		SetCombatState(ECombatState::IdleMoving);
+	}
+
+	if (CombatState == ECombatState::Rolling)
+	{
+		PRINT_LOG(TEXT("퍼펙트 위빙!!"));
+		SetCombatState(ECombatState::IdleMoving);
 	}
 
 	SetCombatState(ECombatState::Stunned);
 	GetWorld()->GetTimerManager().SetTimer(StateTimerHandle, this, &UCombatComponent::EndStun, StunOnDamageTime, false);
 }
 
-void UCombatComponent::EndStun() { SetCombatState(ECombatState::Idle); }
+void UCombatComponent::EndStun() { SetCombatState(ECombatState::IdleMoving); }
