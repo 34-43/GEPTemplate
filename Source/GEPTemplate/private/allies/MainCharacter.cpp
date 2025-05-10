@@ -132,8 +132,8 @@ void AMainCharacter::BeginPlay()
 		2.0f
 	);
 	
-	_sniperUI = CreateWidget(GetWorld(), SniperUiF);
-	InputChangeSniperGun();
+	// _sniperUI = CreateWidget(GetWorld(), SniperUiF);
+	// InputChangeSniperGun();
 }
 
 void AMainCharacter::Tick(float DeltaTime)
