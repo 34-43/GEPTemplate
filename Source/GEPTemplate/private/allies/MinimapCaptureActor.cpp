@@ -1,17 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "allies/MinimapCaptureActor.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
-// Sets default values
 AMinimapCaptureActor::AMinimapCaptureActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	// PrimaryActorTick.bCanEverTick = true;
-
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
     CaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("CaptureComponent"));
     RootComponent = CaptureComponent;
@@ -23,7 +18,6 @@ AMinimapCaptureActor::AMinimapCaptureActor()
     CaptureComponent->bCaptureEveryFrame = true;
 }
 
-// Called when the game starts or when spawned
 void AMinimapCaptureActor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -34,10 +28,14 @@ void AMinimapCaptureActor::BeginPlay()
 	}
 }
 
-// Called every frame
 void AMinimapCaptureActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+	{
+		SetActorLocation(Player->GetActorLocation() + FVector(0.f, 0.f, 2000.f));
+		SetActorRotation(FRotator(-90.f, 0.f, 0.f)); // 고정된 시점
+	}
 }
 
