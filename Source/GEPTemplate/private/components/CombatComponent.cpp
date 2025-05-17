@@ -3,6 +3,7 @@
 #include "GEPTemplate.h"
 #include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
+#include "components/HealthComponent.h"
 
 
 UCombatComponent::UCombatComponent()
@@ -135,36 +136,24 @@ void UCombatComponent::PerformAttackSweep() const
 {
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
-		// FVector StartLocation = Char->GetActorLocation() + FVector(0, 0, 50);
-		// FVector EndLocation = StartLocation + Char->GetActorForwardVector() * AttackRange;
-		// FHitResult Hit;
-		// FCollisionQueryParams Params(NAME_None, false, Char);
-
-		// if (Char->GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Pawn, Params))
-		// {
-		// if (UCombatComponent* Other = Hit.GetActor()->FindComponentByClass<UCombatComponent>())
-		// {
-		// PRINT_LOG(TEXT("공격 적중함"));
-		// Other->Damage(AttackDamage, Char->GetActorForwardVector());
-		// }
-		// }
-
-		FVector Start = Char->GetActorLocation();
+		FVector Base = Char->GetActorLocation();
 		const FVector Forward = Char->GetActorForwardVector();
-		FVector End = Start + Forward * 180.0f;
+		FVector Start = Base + Forward * 60.0f;
+		FVector End = Start + Forward * 120.0f;
 
 		const FCollisionShape Capsule = FCollisionShape::MakeCapsule(50.0f, 50.0f);
 		FCollisionQueryParams Params(NAME_None, false, Char);
 		TArray<FHitResult> HitResults;
 		bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel3,
 		                                            Capsule, Params);
-
+// 충돌 영역 시각화 시작 =================
 #if ENABLE_DRAW_DEBUG
 		const FColor C = bHit ? FColor::Red : FColor::Green;
-		DrawDebugCapsule(GetWorld(), Start, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
-		DrawDebugCapsule(GetWorld(), End, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
-		DrawDebugLine(GetWorld(), Start, End, C.WithAlpha(0.3f), false, 1.0f, 0, 2.0f);
+		// DrawDebugCapsule(GetWorld(), Start, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		// DrawDebugCapsule(GetWorld(), End, 50.0f, 50.0f, FQuat::Identity, C.WithAlpha(0.3f), false, 1.0f);
+		// DrawDebugLine(GetWorld(), Start, End, C.WithAlpha(0.3f), false, 1.0f, 0, 2.0f);
 #endif
+// 충돌 영역 시각화 종료 =================
 
 		for (auto& Hit : HitResults)
 		{
@@ -174,26 +163,35 @@ void UCombatComponent::PerformAttackSweep() const
 				if (UCombatComponent* HitCombatC = HitActor->FindComponentByClass<UCombatComponent>())
 				{
 					HitCombatC->Damage(AttackDamage, Forward);
-					PRINT_LOG(TEXT("공격 전달됨"));
 				}
 			}
 		}
 	}
 }
 
-void UCombatComponent::Damage(float Damage, const FVector& DamageDirection)
+void UCombatComponent::Damage(int32 Damage, const FVector& DamageDirection)
 {
-	// 패링 성공 시
+	OnDamaged.Broadcast();
+	
+	LastHitDirection = DamageDirection.GetSafeNormal();
+	
 	if (CombatState == ECombatState::Parrying)
 	{
-		PRINT_LOG(TEXT("퍼펙트 패링!!"));
+		PRINT_LOG(TEXT("퍼펙트 패링"));
+		// 패링 어드밴티지
 		SetCombatState(ECombatState::IdleMoving);
+		return;
 	}
 
 	if (CombatState == ECombatState::Rolling)
 	{
-		PRINT_LOG(TEXT("퍼펙트 위빙!!"));
-		SetCombatState(ECombatState::IdleMoving);
+		PRINT_LOG(TEXT("퍼펙트 위빙"));
+		return;
+	}
+
+	if (UHealthComponent* HealthC = GetOwner()->FindComponentByClass<UHealthComponent>())
+	{
+		HealthC->UpdateHealth(-Damage);
 	}
 
 	SetCombatState(ECombatState::Stunned);
