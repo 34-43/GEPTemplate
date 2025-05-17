@@ -16,6 +16,8 @@ enum class ECombatState : uint8
 	Stunned
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamagedSignature);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class GEPTEMPLATE_API UCombatComponent : public UActorComponent
 {
@@ -49,13 +51,18 @@ public:
 	void Attack();
 	void Roll();
 	void Parry();
-	void Damage(float Damage, const FVector& DamageDirection);
+	void Damage(int32 Damage, const FVector& DamageDirection);
 	void PerformAttackSweep() const;
+	FVector GetLastHitDirection() {return LastHitDirection;}
+
+	// 이벤트
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnDamagedSignature OnDamaged;
 
 private:
 	//로직
 	FTimerHandle StateTimerHandle;
 	void SetCombatState(ECombatState NewState);
+	FVector LastHitDirection;
 
 	// 델리게이트
 	UFUNCTION() void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);

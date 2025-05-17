@@ -26,6 +26,7 @@ public:
 	// UPROPERTY(VisibleAnywhere, Category = GunMesh) USkeletalMeshComponent* GunMeshC;
 	// UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Combat) class UCombatComponent* CombatC;
+	UPROPERTY(VisibleAnywhere, Category = Health) class UHealthComponent* HealthC;
 	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 
 	// 팩토리
