@@ -31,3 +31,6 @@ Saved/
 
 # Mac
 .DS_Store
+
+# Unreal
+Config/DefaultEditorPerProjectUserSettings.ini
