@@ -1,6 +1,5 @@
 ﻿#include "enemies/BaseEnemy.h"
 
-#include "GEPTemplate.h"
 #include "Components/CapsuleComponent.h"
 #include "components/CombatComponent.h"
 #include "components/HealthComponent.h"
@@ -8,6 +7,7 @@
 #include "enemies/EnemyFloatingWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 
 
 ABaseEnemy::ABaseEnemy()
@@ -47,9 +47,9 @@ ABaseEnemy::ABaseEnemy()
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
 	// 팩토리 설정
-	// static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(TEXT("/Game/StarterContent/Particles/P_Sparks.P_Sparks"));
-	// if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
-	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(TEXT("/Game/Features/BaseBallBatSound/bonk.bonk"));
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(TEXT("/Game/Features/BaseBallBatSound/bat_machine.bat_machine"));
 	if (DamagedSound.Succeeded()) { DamagedSfxF = DamagedSound.Object; }
 }
 
@@ -65,7 +65,7 @@ void ABaseEnemy::BeginPlay()
 	{ HealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged); }
 	HealthC->OnDeath.AddDynamic(this, &ABaseEnemy::HandleDeath);
 
-	// 전투 컴포넌트의 피격 델리게이트에 핸들러를 연결하여 피격 시의 물리적 처리
+	// 전투 컴포넌트의 피격 델리게이트에 핸들러를 연결하여 피격 시의 시각적 처리
 	CombatC->OnDamaged.AddDynamic(this, &ABaseEnemy::HandleDamaged);
 	
 }
@@ -106,7 +106,7 @@ void ABaseEnemy::TickRenderWidget(APlayerController* PC)
 void ABaseEnemy::HandleDamaged()
 {
 	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
-	// UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation(), FRotator::ZeroRotator);
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation(), FRotator::ZeroRotator);
 }
 
 
