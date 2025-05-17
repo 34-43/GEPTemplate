@@ -1,7 +1,5 @@
 ﻿#include "allies/MainCharacter.h"
 
-#include "GEPTemplate.h"
-#include "MovieSceneTracksComponentTypes.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -14,6 +12,7 @@
 #include "Particles/ParticleSystem.h"
 #include "allies/MinimapCaptureActor.h"       // AMinimapCaptureActor 헤더 포함
 #include "allies/PlayerHUDWidget.h"
+#include "components/HealthComponent.h"
 #include "Components/TextBlock.h"
 
 
@@ -86,12 +85,14 @@ AMainCharacter::AMainCharacter()
 	// 전투 컴포넌트 설정
 	CombatC = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontage(
-		TEXT("/Game/Features/Mannequin/Animations/AttackMontage.AttackMontage"));
+		TEXT("/Game/Features/Mannequin/Animations/Montage/AttackMontage.AttackMontage"));
 	if (AttackMontage.Succeeded()) { CombatC->AttackMontage = AttackMontage.Object; }
 	CombatC->AttackMontageSections = { FName("1"), FName("2"), FName("3"), FName("4") };
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> RollMontage(
-		TEXT("/Game/Features/Mannequin/Animations/RollMontage.RollMontage"));
+		TEXT("/Game/Features/Mannequin/Animations/Montage/RollMontage.RollMontage"));
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
+
+	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	// 불릿 팩토리 설정
 	static ConstructorHelpers::FClassFinder<ABaseBullet> BaseBulletBP(
