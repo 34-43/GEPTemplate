@@ -16,6 +16,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_GoldValue;
 
 	// --- 데이터 갱신 함수 ---
+	UFUNCTION() void HandleHealthChanged(int32 NewHealth, int32 MaxHealth);
 	UFUNCTION(BlueprintCallable) void SetHealth(float Percent);
 	UFUNCTION(BlueprintCallable) void SetStamina(float Percent);
 	UFUNCTION(BlueprintCallable) void SetGold(int32 GoldAmount);
