@@ -15,7 +15,7 @@ public:
 	{
 		if (const AActor* Owner = MeshComp->GetOwner())
 		{
-			if (const auto* Combat = Owner->FindComponentByClass<UCombatComponent>())
+			if (auto* Combat = Owner->FindComponentByClass<UCombatComponent>())
 			{
 				Combat->PerformAttackSweep();
 			}
