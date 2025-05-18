@@ -46,6 +46,7 @@ AMainCharacter::AMainCharacter()
 	CameraC = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraC->SetRelativeLocation(FVector(0, 50, 0));
 	CameraC->SetRelativeRotation(FRotator(12, 0, 0));
+	CameraC->PostProcessSettings.MotionBlurAmount = 0.0f;
 	CameraC->SetupAttachment(SpringArmC);
 
 	// 카메라 회전 설정
