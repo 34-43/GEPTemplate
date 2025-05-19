@@ -46,6 +46,16 @@ ABaseEnemy::ABaseEnemy()
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
+	//초점 위젯 컴포넌트 설정
+	FocusingWidgetC = CreateDefaultSubobject<UWidgetComponent>(TEXT("FocusingWidgetComponent"));
+	FocusingWidgetC->SetDrawSize(FVector2D(30, 30));
+	FocusingWidgetC->SetupAttachment(MeshC, TEXT("focus"));
+	FocusingWidgetC->SetRelativeLocation(FVector::ZeroVector);
+	FocusingWidgetC->SetWidgetSpace(EWidgetSpace::Screen);
+	static ConstructorHelpers::FClassFinder<UUserWidget> FocusingWidgetBP(
+		TEXT("/Game/UI/WBP_Focusing.WBP_Focusing_C"));
+	if (FocusingWidgetBP.Succeeded()) { FocusingWidgetC->SetWidgetClass(FocusingWidgetBP.Class); }
+
 	// 팩토리 설정
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
 		TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));

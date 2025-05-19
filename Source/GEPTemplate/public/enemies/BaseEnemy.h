@@ -24,6 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
 	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
 	UPROPERTY(VisibleAnywhere) class UWidgetComponent* FloatingWidgetC;
+	UPROPERTY(VisibleAnywhere) class UWidgetComponent* FocusingWidgetC;
 
 	// 팩토리
 	UPROPERTY(VisibleAnywhere) UParticleSystem* DamagedFxF;
