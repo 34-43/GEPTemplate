@@ -1,15 +1,16 @@
-#include "components/ItemSample.h"
+#include "objects/ItemSample.h"
 #include "Components/SphereComponent.h"
 #include "allies/MainCharacter.h"
+#include "components/HealthComponent.h"
 
 AItemSample::AItemSample()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	// 콜리전 컴포넌트 (오버랩 감지용)
-	CollisionC = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
-	CollisionC->InitSphereRadius(50.f);
-	RootComponent = CollisionC;
+	CollC = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
+	CollC->InitSphereRadius(50.f);
+	SetRootComponent(CollC);
 
 	// 메시 컴포넌트 (시각적 표현용)
 	MeshC = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
@@ -18,7 +19,7 @@ AItemSample::AItemSample()
 	MeshC->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 메시 자체는 충돌 비활성화
 
 	// 오버랩 이벤트 연결
-	CollisionC->OnComponentBeginOverlap.AddDynamic(this, &AItemSample::OnOverlapBegin);
+	CollC->OnComponentBeginOverlap.AddDynamic(this, &AItemSample::OnOverlapBegin);
 }
 
 void AItemSample::BeginPlay()
@@ -61,7 +62,7 @@ void AItemSample::Use(AMainCharacter* TargetCharacter)
 {
 	if (!TargetCharacter) return;
 
-	TargetCharacter->ManageHealth(HealthDelta);
+	TargetCharacter->HealthC->UpdateHealth(HealthDelta);
 	TargetCharacter->ManageStamina(StaminaDelta);
 	TargetCharacter->ManageGold(GoldDelta);
 

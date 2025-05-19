@@ -2,6 +2,11 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 
+void UPlayerHUDWidget::HandleHealthChanged(int32 NewHealth, int32 MaxHealth)
+{
+	SetHealth(NewHealth / static_cast<float>(MaxHealth));
+}
+
 void UPlayerHUDWidget::SetHealth(float Percent)
 {
 	if (PB_Health)

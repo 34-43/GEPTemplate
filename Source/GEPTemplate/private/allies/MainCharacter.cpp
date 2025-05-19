@@ -25,10 +25,11 @@ AMainCharacter::AMainCharacter()
 
 	// 충돌 설정
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Character"));
-	
+
 	// 메시 설정
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMesh(
-		TEXT("/Game/Features/Mannequin/Character/rp_manuel_rigged_001_ue4/rp_manuel_rigged_001_ue4.rp_manuel_rigged_001_ue4"));
+		TEXT(
+			"/Game/Features/Mannequin/Character/rp_manuel_rigged_001_ue4/rp_manuel_rigged_001_ue4.rp_manuel_rigged_001_ue4"));
 	MeshC->SetRelativeLocation(FVector(0, 0, -90));
 	MeshC->SetRelativeRotation(FRotator(0, -90, 0));
 	if (SkeletalMesh.Succeeded()) { MeshC->SetSkeletalMesh(SkeletalMesh.Object); }
@@ -44,15 +45,16 @@ AMainCharacter::AMainCharacter()
 	SpringArmC->TargetArmLength = 330.0f;
 	CameraC = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraC->SetRelativeLocation(FVector(0, 50, 0));
-	CameraC->SetRelativeRotation(FRotator(12,0,0));
+	CameraC->SetRelativeRotation(FRotator(12, 0, 0));
+	CameraC->PostProcessSettings.MotionBlurAmount = 0.0f;
 	CameraC->SetupAttachment(SpringArmC);
 
 	// 카메라 회전 설정
-	SpringArmC->bUsePawnControlRotation = true;	//마우스 회전을 따라감
-	CameraC->bUsePawnControlRotation = false;	//스프링 암의 회전에 의존
-	bUseControllerRotationYaw = false;	//마우스 회전값을 플레이어 방향에 반영하지 않음
-	GetCharacterMovement()->bOrientRotationToMovement = true;	//메시를 이동방향으로 계속 갱신하는 기능 사용
-	GetCharacterMovement()->RotationRate = FRotator(0, 360, 0);	//갱신 속도를 초당 360도로 설정
+	SpringArmC->bUsePawnControlRotation = true; //마우스 회전을 따라감
+	CameraC->bUsePawnControlRotation = false; //스프링 암의 회전에 의존
+	bUseControllerRotationYaw = false; //마우스 회전값을 플레이어 방향에 반영하지 않음
+	GetCharacterMovement()->bOrientRotationToMovement = true; //메시를 이동방향으로 계속 갱신하는 기능 사용
+	GetCharacterMovement()->RotationRate = FRotator(0, 720, 0); //갱신 속도를 초당 720도로 설정
 
 	// 카메라 Lag 설정
 	SpringArmC->bEnableCameraLag = true;
@@ -79,15 +81,16 @@ AMainCharacter::AMainCharacter()
 	// 배트 메시 설정
 	BatMeshC = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BatStaticMeshComponent"));
 	BatMeshC->SetupAttachment(MeshC, TEXT("hand_r_socket"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> BatMesh(TEXT("/Game/Features/Weapons_Free/Meshes/SM_baseball_bat_001.SM_baseball_bat_001"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BatMesh(
+		TEXT("/Game/Features/Weapons_Free/Meshes/SM_baseball_bat_001.SM_baseball_bat_001"));
 	if (BatMesh.Succeeded()) { BatMeshC->SetStaticMesh(BatMesh.Object); }
-	
+
 	// 전투 컴포넌트 설정
 	CombatC = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> AttackMontage(
 		TEXT("/Game/Features/Mannequin/Animations/Montage/AttackMontage.AttackMontage"));
 	if (AttackMontage.Succeeded()) { CombatC->AttackMontage = AttackMontage.Object; }
-	CombatC->AttackMontageSections = { FName("1"), FName("2"), FName("3"), FName("4") };
+	CombatC->AttackMontageSections = {FName("1"), FName("2"), FName("3"), FName("4")};
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> RollMontage(
 		TEXT("/Game/Features/Mannequin/Animations/Montage/RollMontage.RollMontage"));
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
@@ -116,7 +119,21 @@ AMainCharacter::AMainCharacter()
 	if (PlayerHUD.Succeeded()) { PlayerHUD_W = PlayerHUD.Class; }
 	static ConstructorHelpers::FClassFinder<UUserWidget> GameAlert(TEXT("/Game/UI/WBP_GameAlertUI.WBP_GameAlertUI_C"));
 	if (GameAlert.Succeeded()) { GameAlertUI_W = GameAlert.Class; }
-	
+
+	// 팩토리 설정
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
+		TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> ParriedEffect(
+		TEXT("/Game/StarterContent/Particles/P_BulletEffect.P_BulletEffect"));
+	if (ParriedEffect.Succeeded()) { ParriedFxF = ParriedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(
+		TEXT("/Game/Features/BaseBallBatSound/bat_wood.bat_wood"));
+	if (DamagedSound.Succeeded()) { DamagedSfxF = DamagedSound.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> ParriedSound(
+		TEXT("/Game/Features/BaseBallBatSound/critical_hit.critical_hit"));
+	if (ParriedSound.Succeeded()) { ParriedSfxF = ParriedSound.Object; }
+
 	// 점프 수치 설정
 	const auto CharMoveC = GetCharacterMovement();
 	CharMoveC->JumpZVelocity = 500.0f;
@@ -127,7 +144,7 @@ void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-    InitializeMiniMap(); // 미니맵 생성 함수 호출
+	InitializeMiniMap(); // 미니맵 생성 함수 호출
 	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
 	InitializeGameAlert(); // 유저 상태 생성 함수 호출
 
@@ -140,16 +157,27 @@ void AMainCharacter::BeginPlay()
 		true,
 		2.0f
 	);
-	
+
 	// _sniperUI = CreateWidget(GetWorld(), SniperUiF);
 	// InputChangeSniperGun();
+
+	if (auto Widget = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+	{
+		HealthC->OnHealthChanged.AddDynamic(Widget, &UPlayerHUDWidget::HandleHealthChanged);
+	}
+	HealthC->OnDeath.AddDynamic(this, &AMainCharacter::HandleDeath);
+
+	// 전투 컴포넌트의 델리게이트들을 토대로 시각적 처리
+	CombatC->OnDamaged.AddDynamic(this, &AMainCharacter::HandleDamaged);
+	CombatC->OnParried.AddDynamic(this, &AMainCharacter::HandleParried);
+	CombatC->OnStaggered.AddDynamic(this, &AMainCharacter::HandleStaggered);
 }
 
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	TickMovement();
+	TickMovement(DeltaTime);
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -168,7 +196,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	// 전투 컴포넌트 바인드
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
-	PlayerInputComponent->BindAction("Roll", IE_Pressed, CombatC, &UCombatComponent::Roll);
+	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &AMainCharacter::Roll);
 	PlayerInputComponent->BindAction("Parry", IE_Pressed, CombatC, &UCombatComponent::Parry);
 }
 
@@ -176,6 +204,7 @@ void AMainCharacter::Turn(const float Value) { AddControllerYawInput(Value); }
 void AMainCharacter::LookUp(const float Value) { AddControllerPitchInput(Value); }
 void AMainCharacter::MoveForward(const float Value) { InputDirection.X = Value; }
 void AMainCharacter::MoveRight(const float Value) { InputDirection.Y = Value; }
+
 void AMainCharacter::InputJump()
 {
 	if (CurrentStamina >= 10.f)
@@ -256,39 +285,76 @@ void AMainCharacter::InputJump()
 // 	}
 // }
 
-void AMainCharacter::TickMovement()
+void AMainCharacter::Roll()
 {
-	InputDirection = InputDirection.GetRotated(GetControlRotation().Yaw);
-	const FVector MoveDirection = FVector(InputDirection.X, InputDirection.Y, 0);
-	AddMovementInput(MoveDirection);
+	// 유휴, 이동 이외의 상태일 경우 회피 불가능
+	if (CombatC->CombatState != ECombatState::IdleMoving) return;
+
+	SetOverrideMovement(true);
+	const FVector Forward = GetActorForwardVector();
+	SetOverrideMovement(FVector(Forward.X, Forward.Y, 0) * 300.0f);
+
+	CombatC->SetCombatState(ECombatState::Rolling);
+	// 구르기 몽타주 설정
+	PlayAnimMontage(CombatC->RollMontage);
+	// 무적시간 종료 타이머
+	GetWorld()->GetTimerManager().SetTimer(CombatC->StateTimerHandle, [this]()
+	{
+		CombatC->SetCombatState(ECombatState::BufferTime);
+	}, 0.2f, false);
+}
+
+
+void AMainCharacter::SetOverrideMovement(bool value)
+{
+	bOverrideTickMovement = value;
+}
+
+void AMainCharacter::SetOverrideMovement(const FVector NewDirection)
+{
+	OverrideMovementDirection = NewDirection;
+}
+
+void AMainCharacter::TickMovement(float DeltaTime)
+{
+	if (bOverrideTickMovement)
+	{
+		SetActorLocation(GetActorLocation() + OverrideMovementDirection * DeltaTime);
+	}
+	else
+	{
+		InputDirection = InputDirection.GetRotated(GetControlRotation().Yaw);
+		const FVector MoveDirection = FVector(InputDirection.X, InputDirection.Y, 0);
+		AddMovementInput(MoveDirection);
+	}
 }
 
 // 미니맵 생성 함수
 void AMainCharacter::InitializeMiniMap()
 {
-    // 미니맵 1. 미니맵 위젯 생성
-    if (MiniMapW)
-    {
-        MiniMapWidget = CreateWidget<UUserWidget>(GetWorld(), MiniMapW);
-        if (MiniMapWidget)
-        {
-            MiniMapWidget->AddToViewport();
-        }
-    }
+	// 미니맵 1. 미니맵 위젯 생성
+	if (MiniMapW)
+	{
+		MiniMapWidget = CreateWidget<UUserWidget>(GetWorld(), MiniMapW);
+		if (MiniMapWidget)
+		{
+			MiniMapWidget->AddToViewport();
+		}
+	}
 
-    // 미니맵 2. 월드에서 MinimapCaptureActor를 찾는다
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMinimapCaptureActor::StaticClass(), FoundActors);
+	// 미니맵 2. 월드에서 MinimapCaptureActor를 찾는다
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMinimapCaptureActor::StaticClass(), FoundActors);
 
-    if (FoundActors.Num() > 0)
-    {
-        AMinimapCaptureActor* MinimapActor = Cast<AMinimapCaptureActor>(FoundActors[0]);
-        if (MinimapActor)
-        {
-        	MinimapActor->SetActorLocation(GetActorLocation() + FVector(0.f, 0.f, 2000.f));
-        	MinimapActor->SetActorRotation(FRotator(-90.f, 0.f, 0.f));
-        }
-    }
+	if (FoundActors.Num() > 0)
+	{
+		AMinimapCaptureActor* MinimapActor = Cast<AMinimapCaptureActor>(FoundActors[0]);
+		if (MinimapActor)
+		{
+			MinimapActor->SetActorLocation(GetActorLocation() + FVector(0.f, 0.f, 2000.f));
+			MinimapActor->SetActorRotation(FRotator(-90.f, 0.f, 0.f));
+		}
+	}
 }
 
 void AMainCharacter::InitializePlayerHUD()
@@ -303,7 +369,7 @@ void AMainCharacter::InitializePlayerHUD()
 			// 처음 상태 반영
 			if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
 			{
-				PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
+				PlayerHUD->HandleHealthChanged(HealthC->CurrentHealth, HealthC->MaxHealth);
 				PlayerHUD->SetStamina(CurrentStamina / MaxStamina);
 				PlayerHUD->SetGold(CurrentGold);
 			}
@@ -324,20 +390,20 @@ void AMainCharacter::InitializeGameAlert()
 	}
 }
 
-void AMainCharacter::ManageHealth(float Delta)
-{
-	CurrentHealth = FMath::Clamp(CurrentHealth + Delta, 0.0f, MaxHealth);
-
-	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
-	{
-		PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
-	}
-
-	if (CurrentHealth <= 0.0f)
-	{
-		ShowDeathUI();
-	}
-}
+// void AMainCharacter::ManageHealth(float Delta)
+// {
+// 	CurrentHealth = FMath::Clamp(CurrentHealth + Delta, 0.0f, MaxHealth);
+//
+// 	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+// 	{
+// 		PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
+// 	}
+//
+// 	if (CurrentHealth <= 0.0f)
+// 	{
+// 		ShowDeathUI();
+// 	}
+// }
 
 void AMainCharacter::ManageStamina(float Delta)
 {
@@ -374,3 +440,25 @@ void AMainCharacter::ShowDeathUI()
 	}
 }
 
+void AMainCharacter::HandleDeath()
+{
+	// TODO: 몽타주 재생 추가
+	ShowDeathUI();
+}
+
+void AMainCharacter::HandleDamaged()
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
+	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
+}
+
+void AMainCharacter::HandleParried()
+{
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParriedFxF,
+	                                         GetMesh()->GetSocketLocation(TEXT("hand_l_socket")));
+	UGameplayStatics::SpawnSound2D(GetWorld(), ParriedSfxF);
+}
+
+void AMainCharacter::HandleStaggered()
+{
+}

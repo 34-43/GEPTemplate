@@ -18,6 +18,7 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
+	void Roll();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// 컴포넌트
@@ -32,26 +33,31 @@ public:
 	// 팩토리
 	UPROPERTY(EditDefaultsOnly, Category = BulletFactory) TSubclassOf<class ABaseBullet> BulletF;
 	UPROPERTY(EditDefaultsOnly, Category = BulletEffect) UParticleSystem* BulletEffectF;
+	UPROPERTY(VisibleAnywhere) UParticleSystem* DamagedFxF;
+	UPROPERTY(VisibleAnywhere) UParticleSystem* ParriedFxF;
+	UPROPERTY(VisibleAnywhere) USoundBase* DamagedSfxF;
+	UPROPERTY(VisibleAnywhere) USoundBase* ParriedSfxF;
 
 	// 위젯
 	// UPROPERTY(EditDefaultsOnly, Category = "UI") TSubclassOf<UUserWidget> SniperUI_W;
 	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<UUserWidget> MiniMapW;// 미니맵 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> PlayerHUD_W;// 유저 상태 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> GameAlertUI_W;// 개임 알림 위젯 변수
-	
+
 	// 델리게이트
 	void Turn(float Value);
 	void LookUp(float Value);
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void InputJump();
+	void SetOverrideMovement(bool value);
+	void SetOverrideMovement(FVector NewDirection);
 	// void InputFire();
 	// void InputChangeGrenadeGun();
 	// void InputChangeSniperGun();
 	// void InputSniperAim();
 	
 	// 상태 변경
-	void ManageHealth(float Damage); // 체력 관리
 	void ManageStamina(float Amount); // 스태미너 관리
 	void RecoverStamina(); // 스태미너 회복
 	void ManageGold(int32 Amount); // 골드 관리
@@ -60,13 +66,21 @@ public:
 	void ShowDeathUI();
 	
 private:
+	// 델리게이트 핸들러
+	UFUNCTION() void HandleDeath();
+	UFUNCTION() void HandleDamaged();
+	UFUNCTION() void HandleParried();
+	UFUNCTION() void HandleStaggered();
+	
 	// 로직
 	FVector2D InputDirection = FVector2D::ZeroVector;
 	// bool bUsingGrenadeGun = true;
 	// bool bSniperAim = false;
 
 	// 틱 프로시저
-	void TickMovement();
+	void TickMovement(float DeltaTime);
+	bool bOverrideTickMovement = false;
+	FVector OverrideMovementDirection = FVector::ZeroVector;
 	
 	// 위젯
 	void InitializeMiniMap();
@@ -78,8 +92,6 @@ private:
 	UUserWidget* GameAlertUIWidget;// 게임 알림 변수
 
 	// 스탯
-	float MaxHealth = 100.f;
-	float CurrentHealth = 50.f;
 	float MaxStamina = 100.f;
 	float CurrentStamina = 80.f;
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량

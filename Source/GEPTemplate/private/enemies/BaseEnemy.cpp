@@ -1,6 +1,5 @@
 ﻿#include "enemies/BaseEnemy.h"
 
-#include "GEPTemplate.h"
 #include "Components/CapsuleComponent.h"
 #include "components/CombatComponent.h"
 #include "components/HealthComponent.h"
@@ -8,6 +7,7 @@
 #include "enemies/EnemyFloatingWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 
 
 ABaseEnemy::ABaseEnemy()
@@ -46,11 +46,29 @@ ABaseEnemy::ABaseEnemy()
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
+	//초점 위젯 컴포넌트 설정
+	FocusingWidgetC = CreateDefaultSubobject<UWidgetComponent>(TEXT("FocusingWidgetComponent"));
+	FocusingWidgetC->SetDrawSize(FVector2D(30, 30));
+	FocusingWidgetC->SetupAttachment(MeshC, TEXT("focus"));
+	FocusingWidgetC->SetRelativeLocation(FVector::ZeroVector);
+	FocusingWidgetC->SetWidgetSpace(EWidgetSpace::Screen);
+	static ConstructorHelpers::FClassFinder<UUserWidget> FocusingWidgetBP(
+		TEXT("/Game/UI/WBP_Focusing.WBP_Focusing_C"));
+	if (FocusingWidgetBP.Succeeded()) { FocusingWidgetC->SetWidgetClass(FocusingWidgetBP.Class); }
+
 	// 팩토리 설정
-	// static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(TEXT("/Game/StarterContent/Particles/P_Sparks.P_Sparks"));
-	// if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
-	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(TEXT("/Game/Features/BaseBallBatSound/bonk.bonk"));
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
+		TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> ParriedEffect(
+	TEXT("/Game/StarterContent/Particles/P_BulletEffect.P_BulletEffect"));
+	if (ParriedEffect.Succeeded()) { ParriedFxF = ParriedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(
+		TEXT("/Game/Features/BaseBallBatSound/bat_machine.bat_machine"));
 	if (DamagedSound.Succeeded()) { DamagedSfxF = DamagedSound.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> ParriedSound(
+	TEXT("/Game/Features/BaseBallBatSound/bat_metal.bat_metal"));
+	if (ParriedSound.Succeeded()) { ParriedSfxF = ParriedSound.Object; }
 }
 
 void ABaseEnemy::BeginPlay()
@@ -62,12 +80,15 @@ void ABaseEnemy::BeginPlay()
 
 	// 체력 컴포넌트의 두 델리게이트에 각각 1.체력 UI 업데이트 처리, 2. 사망 처리 핸들러 연결
 	if (auto Widget = Cast<UEnemyFloatingWidget>(FloatingWidgetC->GetWidget()))
-	{ HealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged); }
+	{
+		HealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged);
+	}
 	HealthC->OnDeath.AddDynamic(this, &ABaseEnemy::HandleDeath);
 
-	// 전투 컴포넌트의 피격 델리게이트에 핸들러를 연결하여 피격 시의 물리적 처리
+	// 전투 컴포넌트의 델리게이트들을 토대로 시각적 처리
 	CombatC->OnDamaged.AddDynamic(this, &ABaseEnemy::HandleDamaged);
-	
+	CombatC->OnParried.AddDynamic(this, &ABaseEnemy::HandleParried);
+	CombatC->OnStaggered.AddDynamic(this, &ABaseEnemy::HandleStaggered);
 }
 
 void ABaseEnemy::Tick(float DeltaTime)
@@ -75,6 +96,16 @@ void ABaseEnemy::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TickRenderWidget(MainPlayerController);
+
+	if (AttackTimer <= 0.0f)
+	{
+		CombatC->Attack();
+		AttackTimer = 5.0f;
+	}
+	else
+	{
+		AttackTimer -= DeltaTime;
+	}
 }
 
 void ABaseEnemy::TickRenderWidget(APlayerController* PC)
@@ -105,8 +136,21 @@ void ABaseEnemy::TickRenderWidget(APlayerController* PC)
 
 void ABaseEnemy::HandleDamaged()
 {
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
 	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
-	// UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation(), FRotator::ZeroRotator);
+}
+
+void ABaseEnemy::HandleParried()
+{
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParriedFxF, GetMesh()->GetSocketLocation(TEXT("hand_l_socket")));
+		UGameplayStatics::SpawnSound2D(GetWorld(), ParriedSfxF);
+	}, 0.23f, false);
+}
+
+void ABaseEnemy::HandleStaggered()
+{
 }
 
 
@@ -114,7 +158,7 @@ void ABaseEnemy::HandleDeath()
 {
 	// 틱 비활성화
 	SetActorTickEnabled(false);
-	
+
 	// UI 삭제
 	if (FloatingWidgetC)
 	{
@@ -126,7 +170,7 @@ void ABaseEnemy::HandleDeath()
 
 	// 래그돌 전환 및 넉
 	RagDollImpulse();
-	
+
 	// 삭제 시간 설정
 	SetLifeSpan(5.0f);
 }
@@ -135,14 +179,14 @@ void ABaseEnemy::RagDollImpulse()
 {
 	// 메시 가져오기
 	USkeletalMeshComponent* MeshC = GetMesh();
-	
+
 	// 컨트롤러 해제
 	DetachFromControllerPendingDestroy();
-	
+
 	// 이동, 충돌 비활성화
 	GetCharacterMovement()->DisableMovement();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
+
 	// 피직스 설정
 	MeshC->SetSimulatePhysics(true);
 	MeshC->SetCollisionProfileName(TEXT("Ragdoll"));

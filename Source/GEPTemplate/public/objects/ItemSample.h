@@ -12,7 +12,7 @@ class GEPTEMPLATE_API AItemSample : public AActor
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(VisibleAnywhere) USphereComponent* CollisionC;
+	UPROPERTY(VisibleAnywhere) USphereComponent* CollC;
 	UPROPERTY(VisibleAnywhere, Category = "Mesh") UStaticMeshComponent* MeshC;
 	UPROPERTY(EditAnywhere, Category = "Visual") UMaterialInterface* CustomMaterial = nullptr;
 
@@ -21,7 +21,7 @@ public:
 	AItemSample();
 
 	// 사용 종류
-	UPROPERTY(EditAnywhere, Category="Item Effect") float HealthDelta = 0.f;
+	UPROPERTY(EditAnywhere, Category="Item Effect") int32 HealthDelta = 10.f;
 	UPROPERTY(EditAnywhere, Category="Item Effect")	float StaminaDelta = 0.f;
 	UPROPERTY(EditAnywhere, Category="Item Effect")	int32 GoldDelta = 0;
 	// 충돌
