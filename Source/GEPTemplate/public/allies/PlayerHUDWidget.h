@@ -17,6 +17,7 @@ public:
 
 	// --- 데이터 갱신 함수 ---
 	UFUNCTION() void HandleHealthChanged(int32 NewHealth, int32 MaxHealth);
+	UFUNCTION() void HandleStaminaChanged(float NewStamina, float MaxStamina);
 	UFUNCTION(BlueprintCallable) void SetHealth(float Percent);
 	UFUNCTION(BlueprintCallable) void SetStamina(float Percent);
 	UFUNCTION(BlueprintCallable) void SetGold(int32 GoldAmount);

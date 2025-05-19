@@ -13,6 +13,7 @@
 #include "allies/MinimapCaptureActor.h"       // AMinimapCaptureActor 헤더 포함
 #include "allies/PlayerHUDWidget.h"
 #include "components/HealthComponent.h"
+#include "components/StaminaComponent.h"
 #include "Components/TextBlock.h"
 
 
@@ -96,6 +97,7 @@ AMainCharacter::AMainCharacter()
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
 
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	StaminaC = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
 	// 불릿 팩토리 설정
 	static ConstructorHelpers::FClassFinder<ABaseBullet> BaseBulletBP(
@@ -148,22 +150,13 @@ void AMainCharacter::BeginPlay()
 	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
 	InitializeGameAlert(); // 유저 상태 생성 함수 호출
 
-	// 스태미너 회복 로직
-	GetWorldTimerManager().SetTimer(
-		StaminaRecoveryTimer,
-		this,
-		&AMainCharacter::RecoverStamina,
-		1.0f,
-		true,
-		2.0f
-	);
-
 	// _sniperUI = CreateWidget(GetWorld(), SniperUiF);
 	// InputChangeSniperGun();
 
 	if (auto Widget = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
 	{
 		HealthC->OnHealthChanged.AddDynamic(Widget, &UPlayerHUDWidget::HandleHealthChanged);
+		StaminaC->OnStaminaChanged.AddDynamic(Widget, &UPlayerHUDWidget::HandleStaminaChanged);
 	}
 	HealthC->OnDeath.AddDynamic(this, &AMainCharacter::HandleDeath);
 
@@ -178,6 +171,7 @@ void AMainCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TickMovement(DeltaTime);
+	TickStamina(DeltaTime);
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -207,25 +201,12 @@ void AMainCharacter::MoveRight(const float Value) { InputDirection.Y = Value; }
 
 void AMainCharacter::InputJump()
 {
-	if (CurrentStamina >= 10.f)
+	const bool bIsJumping = GetCharacterMovement()->IsFalling();
+	if (!bIsJumping && StaminaC->CurrentStamina > 10.0f)
 	{
 		Super::Jump();
 
-		ManageStamina(-10.f); // 딱 10만 줄인다
-
-		// 회복 재설정
-		GetWorldTimerManager().ClearTimer(StaminaRecoveryTimer);
-		GetWorldTimerManager().SetTimer(
-			StaminaRecoveryTimer,
-			this,
-			&AMainCharacter::RecoverStamina,
-			1.0f,
-			true
-		);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Not enough stamina to jump!"));
+		StaminaC->UpdateStamina(-10.0f);
 	}
 }
 
@@ -329,6 +310,11 @@ void AMainCharacter::TickMovement(float DeltaTime)
 	}
 }
 
+void AMainCharacter::TickStamina(float DeltaTime)
+{
+	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate);
+}
+
 // 미니맵 생성 함수
 void AMainCharacter::InitializeMiniMap()
 {
@@ -370,7 +356,7 @@ void AMainCharacter::InitializePlayerHUD()
 			if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
 			{
 				PlayerHUD->HandleHealthChanged(HealthC->CurrentHealth, HealthC->MaxHealth);
-				PlayerHUD->SetStamina(CurrentStamina / MaxStamina);
+				PlayerHUD->HandleStaminaChanged(StaminaC->CurrentStamina, StaminaC->MaxStamina);
 				PlayerHUD->SetGold(CurrentGold);
 			}
 		}
@@ -388,36 +374,6 @@ void AMainCharacter::InitializeGameAlert()
 			GameAlertUIWidget->SetVisibility(ESlateVisibility::Hidden); // 처음엔 숨김
 		}
 	}
-}
-
-// void AMainCharacter::ManageHealth(float Delta)
-// {
-// 	CurrentHealth = FMath::Clamp(CurrentHealth + Delta, 0.0f, MaxHealth);
-//
-// 	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
-// 	{
-// 		PlayerHUD->SetHealth(CurrentHealth / MaxHealth);
-// 	}
-//
-// 	if (CurrentHealth <= 0.0f)
-// 	{
-// 		ShowDeathUI();
-// 	}
-// }
-
-void AMainCharacter::ManageStamina(float Delta)
-{
-	CurrentStamina = FMath::Clamp(CurrentStamina + Delta, 0.f, MaxStamina);
-
-	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
-	{
-		PlayerHUD->SetStamina(CurrentStamina / MaxStamina);
-	}
-}
-
-void AMainCharacter::RecoverStamina()
-{
-	ManageStamina(StaminaRecoveryRate);
 }
 
 void AMainCharacter::ManageGold(int32 Delta)

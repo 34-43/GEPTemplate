@@ -2,6 +2,7 @@
 #include "Components/SphereComponent.h"
 #include "allies/MainCharacter.h"
 #include "components/HealthComponent.h"
+#include "components/StaminaComponent.h"
 
 AItemSample::AItemSample()
 {
@@ -63,7 +64,7 @@ void AItemSample::Use(AMainCharacter* TargetCharacter)
 	if (!TargetCharacter) return;
 
 	TargetCharacter->HealthC->UpdateHealth(HealthDelta);
-	TargetCharacter->ManageStamina(StaminaDelta);
+	TargetCharacter->StaminaC->UpdateStamina(StaminaDelta);
 	TargetCharacter->ManageGold(GoldDelta);
 
 	Destroy(); // 아이템 제거

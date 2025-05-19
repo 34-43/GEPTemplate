@@ -28,6 +28,7 @@ public:
 	// UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Combat) class UCombatComponent* CombatC;
 	UPROPERTY(VisibleAnywhere, Category = Health) class UHealthComponent* HealthC;
+	UPROPERTY(VisibleAnywhere, Category = Stamina) class UStaminaComponent* StaminaC;
 	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 
 	// 팩토리
@@ -81,7 +82,8 @@ private:
 	void TickMovement(float DeltaTime);
 	bool bOverrideTickMovement = false;
 	FVector OverrideMovementDirection = FVector::ZeroVector;
-	
+	void TickStamina(float DeltaTime); // stamina natural recovery
+
 	// 위젯
 	void InitializeMiniMap();
 	void InitializePlayerHUD();
@@ -92,9 +94,6 @@ private:
 	UUserWidget* GameAlertUIWidget;// 게임 알림 변수
 
 	// 스탯
-	float MaxStamina = 100.f;
-	float CurrentStamina = 80.f;
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량
-	FTimerHandle StaminaRecoveryTimer;// 스태미너 타이머
 	int32 CurrentGold = 0;
 };

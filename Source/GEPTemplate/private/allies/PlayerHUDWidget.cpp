@@ -7,6 +7,11 @@ void UPlayerHUDWidget::HandleHealthChanged(int32 NewHealth, int32 MaxHealth)
 	SetHealth(NewHealth / static_cast<float>(MaxHealth));
 }
 
+void UPlayerHUDWidget::HandleStaminaChanged(float NewStamina, float MaxStamina)
+{
+	SetStamina(NewStamina / (MaxStamina));
+}
+
 void UPlayerHUDWidget::SetHealth(float Percent)
 {
 	if (PB_Health)
