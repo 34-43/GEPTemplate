@@ -11,6 +11,7 @@
  */
 class UVerticalBox;
 class UWBP_MenuButton;
+class UPopupFrame;
 
 UCLASS()
 class GEPTEMPLATE_API UStartMenu : public UUserWidget
@@ -26,19 +27,25 @@ public:
 
 protected:
 	// VerticalBox 위젯
-	UPROPERTY(meta = (BindWidget))
-	UVerticalBox* BT_List;  // UMG에서 이 변수에 실제 VerticalBox 위젯이 바인딩되어야 함
-
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* BT_List;
 	// WBP_MenuButton 블루프린트 클래스
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu")
-	TSubclassOf<UUserWidget> WBP_MenuButtonClass;  // 동적으로 생성할 버튼 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu") TSubclassOf<UUserWidget> WBP_MenuButtonClass;
+	// 팝업 게시판 위젯 클래스
+	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<UPopupFrame> PopUpClass;
+	// 생성된 팝업 UI
+	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<UUserWidget> SettingPageClass;
+	UPROPERTY(EditAnywhere, Category = "UI") TArray<TSubclassOf<UUserWidget>> HelpPageClasses;
+	// 생성된 팝업 UI 인스턴스
+	UPROPERTY()	UPopupFrame* ActivePopUpScreen;
 
 private:
-	// 세이브 데이터 확인 여부
+	// 세이브 데이터 여부
 	bool bHasSaveData = false;
+	// 설정 로드 함수
+	void LoadSettings();
 	// 버튼 함수들
-	UFUNCTION()	void OnContinueClicked();
-	UFUNCTION()	void OnStartClicked();
+	UFUNCTION()	void OnContinueGameClicked();
+	UFUNCTION()	void OnNewStartClicked();
 	UFUNCTION()	void OnHelpClicked();
 	UFUNCTION()	void OnSettingClicked();
 	UFUNCTION()	void OnExitClicked();

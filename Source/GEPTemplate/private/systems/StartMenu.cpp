@@ -4,6 +4,7 @@
 #include "systems/StartMenu.h"
 #include "systems/StartMenuBT.h"
 #include "systems/MenuGameMode.h"
+#include "systems/GameSettingsInstance.h"
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 #include "Blueprint/UserWidget.h"
@@ -15,12 +16,24 @@ void UStartMenu::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// 게임 세이브 확인
+	bHasSaveData = UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSaveSlot"), 0);
+	// 설정값 로드
+	LoadSettings();
 	// 버튼을 동적으로 추가하는 함수 호출
 	CreateMenuButtons();
 }
 
+void UStartMenu::LoadSettings()
+{
+	UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance());
+	// 설정 세이브 파일 확인 (설정 세이브 파일은 아직 구현 X)
+	bool bHasSavedSettings = UGameplayStatics::DoesSaveGameExist(TEXT("SettingSaveSlot"), 0);
+}
+
 void UStartMenu::CreateMenuButtons()
 {
+	// 버튼 메뉴 구현
 	if (BT_List && WBP_MenuButtonClass)
 	{
 		// 버튼 5개 생성
@@ -38,14 +51,14 @@ void UStartMenu::CreateMenuButtons()
 			BT_List->AddChildToVerticalBox(HelpButton);
 			BT_List->AddChildToVerticalBox(SettingButton);
 			BT_List->AddChildToVerticalBox(ExitButton);
-			
+
 			// 버튼 1: 이어하기
 			ContinueButton->SetButtonText(FText::FromString(TEXT("이어하기")));
 			if (bHasSaveData)
 			{
 				if (ContinueButton->GetButton())
 				{
-					ContinueButton->GetButton()->OnClicked.AddDynamic(this, &UStartMenu::OnContinueClicked);
+					ContinueButton->GetButton()->OnClicked.AddDynamic(this, &UStartMenu::OnContinueGameClicked);
 				}
 			}
 			else
@@ -58,7 +71,7 @@ void UStartMenu::CreateMenuButtons()
 			StartButton->SetButtonText(FText::FromString(TEXT("시작하기")));
 			if (StartButton->GetButton())
 			{
-				StartButton->GetButton()->OnClicked.AddDynamic(this, &UStartMenu::OnStartClicked);
+				StartButton->GetButton()->OnClicked.AddDynamic(this, &UStartMenu::OnNewStartClicked);
 			}
 			if (bHasSaveData)
 			{
@@ -90,31 +103,53 @@ void UStartMenu::CreateMenuButtons()
 	}
 }
 
-void UStartMenu::OnContinueClicked()
+// 이어하기
+void UStartMenu::OnContinueGameClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("--이어하기 기능 구현중--"));
-}
-void UStartMenu::OnStartClicked()
-{
-	// 현재 게임 모드를 가져옵니다
-	AMenuGameMode* MenuGameMode = Cast<AMenuGameMode>(UGameplayStatics::GetGameMode(this));
-	if (MenuGameMode)
+	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
 	{
-		// 게임 시작 함수 호출
-		MenuGameMode->StartGame();
+		// 이어하기 할 경우 "게임 불러오기 상태" 전달
+		GameInstance->bIsContinue = true;
+		// 게임 시작
+		AMenuGameMode* MenuGameMode = Cast<AMenuGameMode>(UGameplayStatics::GetGameMode(this));
+		if (MenuGameMode) MenuGameMode->StartGame();
 	}
 }
+
+// 시작하기, 새로하기
+void UStartMenu::OnNewStartClicked()
+{
+	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
+	{
+		GameInstance->bIsContinue = false;
+		// 세이브 초기화
+		if (bHasSaveData) UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSaveSlot"), 0);
+		// 게임 시작
+		AMenuGameMode* MenuGameMode = Cast<AMenuGameMode>(UGameplayStatics::GetGameMode(this));
+		if (MenuGameMode) MenuGameMode->StartGame();
+	}
+}
+
 void UStartMenu::OnHelpClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("--도움말 기능 구현중--"));
+	UWorld* World = GetWorld();
+	if (!World) return;
+	AMenuGameMode* GameMode = Cast<AMenuGameMode>(World->GetAuthGameMode());
+	if (GameMode) GameMode->ShowHelp();
 }
+
 void UStartMenu::OnSettingClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("--설정 기능 구현중--"));
+	UWorld* World = GetWorld();
+	if (!World) return;
+	AMenuGameMode* GameMode = Cast<AMenuGameMode>(World->GetAuthGameMode());
+	if (GameMode) GameMode->ShowSettings();
 }
+
 void UStartMenu::OnExitClicked()
 {
 	// 게임 종료
 	UWorld* currentWorld = GetWorld();
-	UKismetSystemLibrary::QuitGame(currentWorld, currentWorld->GetFirstPlayerController(), EQuitPreference::Quit, false);
+	UKismetSystemLibrary::QuitGame(currentWorld, currentWorld->GetFirstPlayerController(), EQuitPreference::Quit,
+	                               false);
 }

@@ -2,7 +2,8 @@
 
 
 #include "systems/MenuGameMode.h"
-
+#include "systems/SettingsPopup.h"
+#include "systems/HelpPopup.h"
 #include "GEPTemplate.h"
 #include "GEPTemplateGameModeBase.h"
 #include "Blueprint/UserWidget.h"
@@ -79,5 +80,30 @@ void AMenuGameMode::StartGame()
 		PC->SetInputMode(FInputModeGameOnly());
 		// 마우스 커서 숨기기
 		PC->bShowMouseCursor = false;
+	}
+}
+
+void AMenuGameMode::ShowHelp()
+{
+	UWorld* World = GetWorld();
+	if (World && HelpPopupClass)
+	{
+		UHelpPopup* HelpPopup = CreateWidget<UHelpPopup>(World, HelpPopupClass);
+		if (HelpPopup)
+		{
+			HelpPopup->AddToViewport();
+		}
+	}
+}
+void AMenuGameMode::ShowSettings()
+{
+	UWorld* World = GetWorld();
+	if (World && SettingsPopupClass)
+	{
+		USettingsPopup* SettingsPopup = CreateWidget<USettingsPopup>(World, SettingsPopupClass);
+		if (SettingsPopup)
+		{
+			SettingsPopup->AddToViewport();
+		}
 	}
 }

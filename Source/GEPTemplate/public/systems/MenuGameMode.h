@@ -21,9 +21,16 @@ public:
 	
 	// 게임 시작 함수
 	void StartGame();
-	
+
+	// 팝업 생성
+	UFUNCTION(BlueprintCallable) void ShowSettings();
+	UFUNCTION(BlueprintCallable) void ShowHelp();
 protected:
 	virtual void BeginPlay() override;
+
+	// 메뉴에서 시작할 때 선택한 게임 모드
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameMode")
+	TSubclassOf<AGameModeBase> GameModeToStart;
 
 	// 로고 화면 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
@@ -33,7 +40,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<class UUserWidget> MainMenuUI;
 
-	// 메뉴에서 시작할 때 선택한 게임 모드
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameMode")
-	TSubclassOf<AGameModeBase> GameModeToStart;
+	// 도움말 WBP
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<class UUserWidget> HelpPopupClass;
+	
+	// 설정창 WBP
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<class UUserWidget> SettingsPopupClass;
 };
