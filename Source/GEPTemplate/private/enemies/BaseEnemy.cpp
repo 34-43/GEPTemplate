@@ -98,31 +98,6 @@ void ABaseEnemy::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TickRenderWidget(MainPlayerController);
-
-	// if (AttackTimer <= 0.0f)
-	// {
-	// 	CombatC->Attack();
-	// 	AttackTimer = 5.0f;
-	// }
-	// else
-	// {
-	// 	AttackTimer -= DeltaTime;
-	// }
-
-	TickAI(DeltaTime);
-}
-
-void ABaseEnemy::TickAI(float DeltaTime)
-{
-	if (AttackTimer <= 0.0f)
-	{
-		CombatC->Attack();
-		AttackTimer = 5.0f;
-	}
-	else
-	{
-		AttackTimer -= DeltaTime;
-	}
 }
 
 void ABaseEnemy::TickRenderWidget(APlayerController* PC)
