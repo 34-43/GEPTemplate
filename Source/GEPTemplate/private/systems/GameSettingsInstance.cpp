@@ -24,7 +24,7 @@ void UGameSettingsInstance::SavePlayerData(AMainCharacter* Player)
 		UGameplayStatics::CreateSaveGameObject(UGEPSaveGame::StaticClass()));
 	if (SaveGameInstance)
 	{
-		SaveGameInstance->PlayerData = Player->GetSaveData();
+		//SaveGameInstance->PlayerData = Player->GetSaveData();
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("PlayerSaveSlot"), 0);
 	}
 }
@@ -39,7 +39,7 @@ void UGameSettingsInstance::LoadPlayerData(AMainCharacter* Player)
 			UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSaveSlot"), 0));
 		if (Loaded)
 		{
-			Player->LoadFromSaveData(Loaded->PlayerData);
+			//Player->LoadFromSaveData(Loaded->PlayerData);
 		}
 	}
 }
