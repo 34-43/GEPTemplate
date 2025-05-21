@@ -185,16 +185,6 @@ void UCombatComponent::Damage(int32 Damage, const FVector& DamageDirection, UCom
 		return;
 	}
 
-	if (Cast<ABaseEnemy>(GetOwner()))
-	{
-		if (CombatState == ECombatState::IdleMoving)
-		{
-			PRINT_LOG(TEXT("적 방어"))
-			ParrySuccess(Performer);
-			return;
-		}
-	}
-
 	OnDamaged.Broadcast();
 	if (UHealthComponent* HealthC = GetOwner()->FindComponentByClass<UHealthComponent>())
 	{

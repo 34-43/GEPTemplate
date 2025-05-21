@@ -271,6 +271,8 @@ void AMainCharacter::Roll()
 	// 유휴, 이동 이외의 상태일 경우 회피 불가능
 	if (CombatC->CombatState != ECombatState::IdleMoving) return;
 
+	if (StaminaC->CurrentStamina < 10.0f) return;
+
 	SetOverrideMovement(true);
 	const FVector Forward = GetActorForwardVector();
 	SetOverrideMovement(FVector(Forward.X, Forward.Y, 0) * 300.0f);
@@ -283,6 +285,8 @@ void AMainCharacter::Roll()
 	{
 		CombatC->SetCombatState(ECombatState::BufferTime);
 	}, 0.2f, false);
+
+	StaminaC->UpdateStamina(-10.0f);
 }
 
 

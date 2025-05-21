@@ -19,6 +19,7 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	void TickRenderWidget(APlayerController* PC);
+	virtual void TickAI(float DeltaTime);
 
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;

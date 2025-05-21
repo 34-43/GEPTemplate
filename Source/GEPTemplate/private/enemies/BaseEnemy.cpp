@@ -24,7 +24,9 @@ ABaseEnemy::ABaseEnemy()
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMesh(
 		TEXT("/Game/Features/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin"));
 	if (SkeletalMesh.Succeeded()) { MeshC->SetSkeletalMesh(SkeletalMesh.Object); }
-
+	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));         // Z축 위치 -90
+	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));        // Yaw -90도 회전
+	
 	// 애니메이션 BP 설정
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
 		TEXT("/Game/Blueprints/ABP_MainCharacter.ABP_MainCharacter_C"));
@@ -46,7 +48,7 @@ ABaseEnemy::ABaseEnemy()
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
-	//초점 위젯 컴포넌트 설정
+	// 초점 위젯 컴포넌트 설정
 	FocusingWidgetC = CreateDefaultSubobject<UWidgetComponent>(TEXT("FocusingWidgetComponent"));
 	FocusingWidgetC->SetDrawSize(FVector2D(30, 30));
 	FocusingWidgetC->SetupAttachment(MeshC, TEXT("focus"));
@@ -97,6 +99,21 @@ void ABaseEnemy::Tick(float DeltaTime)
 
 	TickRenderWidget(MainPlayerController);
 
+	// if (AttackTimer <= 0.0f)
+	// {
+	// 	CombatC->Attack();
+	// 	AttackTimer = 5.0f;
+	// }
+	// else
+	// {
+	// 	AttackTimer -= DeltaTime;
+	// }
+
+	TickAI(DeltaTime);
+}
+
+void ABaseEnemy::TickAI(float DeltaTime)
+{
 	if (AttackTimer <= 0.0f)
 	{
 		CombatC->Attack();
