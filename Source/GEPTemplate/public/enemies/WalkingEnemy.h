@@ -17,10 +17,9 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
-	virtual void TickAI(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	
 	// Component
-	UPROPERTY(VisibleAnywhere) class UStateComponent* StateC;
+	UPROPERTY(VisibleAnywhere) class UBehaviorComponent* BehaviorC;
 };

@@ -1,6 +1,7 @@
 ﻿#include "enemies/WalkingEnemy.h"
 
-#include "components/StateComponent.h"
+#include "components/CombatComponent.h"
+#include "components/BehaviorComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 
@@ -11,7 +12,7 @@ AWalkingEnemy::AWalkingEnemy()
 	GetCharacterMovement()->bOrientRotationToMovement = true;	// 메시를 이동방향으로 계속 갱신하는 기능 사용
 	
 	// Set State Component
-	StateC = CreateDefaultSubobject<UStateComponent>(TEXT("StateComponent"));
+	BehaviorC = CreateDefaultSubobject<UBehaviorComponent>(TEXT("BehaviorComponent"));
 }
 
 void AWalkingEnemy::BeginPlay()
@@ -25,15 +26,7 @@ void AWalkingEnemy::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AWalkingEnemy::TickAI(float DeltaTime)
-{
-	// Super::TickAI(DeltaTime);
-	
-	
-}
-
 void AWalkingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
-
