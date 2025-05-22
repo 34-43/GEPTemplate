@@ -2,6 +2,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "components/CombatComponent.h"
+#include "components/FocusedComponent.h"
 #include "components/HealthComponent.h"
 #include "Components/WidgetComponent.h"
 #include "enemies/EnemyFloatingWidget.h"
@@ -48,15 +49,9 @@ ABaseEnemy::ABaseEnemy()
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
-	// 초점 위젯 컴포넌트 설정
-	FocusingWidgetC = CreateDefaultSubobject<UWidgetComponent>(TEXT("FocusingWidgetComponent"));
-	FocusingWidgetC->SetDrawSize(FVector2D(30, 30));
-	FocusingWidgetC->SetupAttachment(MeshC, TEXT("focus"));
-	FocusingWidgetC->SetRelativeLocation(FVector::ZeroVector);
-	FocusingWidgetC->SetWidgetSpace(EWidgetSpace::Screen);
-	static ConstructorHelpers::FClassFinder<UUserWidget> FocusingWidgetBP(
-		TEXT("/Game/UI/WBP_Focusing.WBP_Focusing_C"));
-	if (FocusingWidgetBP.Succeeded()) { FocusingWidgetC->SetWidgetClass(FocusingWidgetBP.Class); }
+	// 피집중 컴포넌트 설정
+	FocusedC = CreateDefaultSubobject<UFocusedComponent>(TEXT("FocusedComponent"));
+	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
 	// 팩토리 설정
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
@@ -81,7 +76,7 @@ void ABaseEnemy::BeginPlay()
 	MainPlayerController = UGameplayStatics::GetPlayerController(this, 0);
 
 	// 체력 컴포넌트의 두 델리게이트에 각각 1.체력 UI 업데이트 처리, 2. 사망 처리 핸들러 연결
-	if (auto Widget = Cast<UEnemyFloatingWidget>(FloatingWidgetC->GetWidget()))
+	if (const auto Widget = Cast<UEnemyFloatingWidget>(FloatingWidgetC->GetWidget()))
 	{
 		HealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged);
 	}
@@ -156,6 +151,11 @@ void ABaseEnemy::HandleDeath()
 	{
 		FloatingWidgetC->DestroyComponent();
 		FloatingWidgetC = nullptr;
+	}
+	if (FocusedC)
+	{
+		FocusedC->DestroyComponent();
+		FocusedC = nullptr;
 	}
 
 	// 아이템 드랍
