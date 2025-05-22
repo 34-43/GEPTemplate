@@ -22,9 +22,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-	                           FActorComponentTickFunction* ThisTickFunction) override;
-
 	// 스테이터스
 	UPROPERTY(EditDefaultsOnly, Category="Stamina") float MaxStamina = 100.0f;
 	UPROPERTY(EditDefaultsOnly, Category="Stamina") float CurrentStamina;
