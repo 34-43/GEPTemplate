@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "FocusingWidget.generated.h"
+#include "FocusedWidget.generated.h"
 
 UCLASS()
-class GEPTEMPLATE_API UFocusingWidget : public UUserWidget
+class GEPTEMPLATE_API UFocusedWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

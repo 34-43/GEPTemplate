@@ -26,10 +26,11 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Camera) class UCameraComponent* CameraC;
 	// UPROPERTY(VisibleAnywhere, Category = GunMesh) USkeletalMeshComponent* GunMeshC;
 	// UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
+	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Combat) class UCombatComponent* CombatC;
+	UPROPERTY(VisibleAnywhere, Category = Focusing) class UFocusingComponent* FocusingC;
 	UPROPERTY(VisibleAnywhere, Category = Health) class UHealthComponent* HealthC;
 	UPROPERTY(VisibleAnywhere, Category = Stamina) class UStaminaComponent* StaminaC;
-	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 
 	// 팩토리
 	UPROPERTY(EditDefaultsOnly, Category = BulletFactory) TSubclassOf<class ABaseBullet> BulletF;

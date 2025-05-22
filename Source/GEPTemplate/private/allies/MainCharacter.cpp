@@ -12,6 +12,7 @@
 #include "Particles/ParticleSystem.h"
 #include "allies/MinimapCaptureActor.h"       // AMinimapCaptureActor 헤더 포함
 #include "allies/PlayerHUDWidget.h"
+#include "components/FocusingComponent.h"
 #include "components/HealthComponent.h"
 #include "components/StaminaComponent.h"
 #include "Components/TextBlock.h"
@@ -96,6 +97,8 @@ AMainCharacter::AMainCharacter()
 		TEXT("/Game/Features/Mannequin/Animations/Montage/RollMontage.RollMontage"));
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
 
+	FocusingC = CreateDefaultSubobject<UFocusingComponent>(TEXT("FocusingComponent"));
+	
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	StaminaC = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
@@ -192,6 +195,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
 	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &AMainCharacter::Roll);
 	PlayerInputComponent->BindAction("Parry", IE_Pressed, CombatC, &UCombatComponent::Parry);
+
+	PlayerInputComponent->BindAction("Focus", IE_Pressed, FocusingC, &UFocusingComponent::CycleTarget);
 }
 
 void AMainCharacter::Turn(const float Value) { AddControllerYawInput(Value); }
