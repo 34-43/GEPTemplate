@@ -1,8 +1,8 @@
-﻿#include "enemies/FocusingWidget.h"
+﻿#include "enemies/FocusedWidget.h"
 
 #include "Components/Image.h"
 
-void UFocusingWidget::SetFocus(bool Value)
+void UFocusedWidget::SetFocus(const bool Value)
 {
 	bFocused = Value;
 	if (Value)
