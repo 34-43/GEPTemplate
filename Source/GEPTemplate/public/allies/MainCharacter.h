@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "components/FocusedComponent.h"
 #include "GameFramework/Character.h"
 #include "MainCharacter.generated.h"
 
@@ -52,16 +53,23 @@ public:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void InputJump();
-	void SetOverrideMovement(bool value);
-	void SetOverrideMovement(FVector NewDirection);
 	// void InputFire();
 	// void InputChangeGrenadeGun();
 	// void InputChangeSniperGun();
 	// void InputSniperAim();
+
+	// 상호작용
+	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }
+	void SetOverMove(const bool Value) { bOverMove = Value; }
+	void SetOverMoveParams(const FVector NewDirection, const float Scale)
+	{
+		OverMoveDirection = NewDirection;
+		OverMoveScale = Scale;
+	}
+	void StartFocusControlWithTarget(UFocusedComponent* Target);
+	UFUNCTION() void EndFocusControl();
 	
 	// 상태 변경
-	void ManageStamina(float Amount); // 스태미너 관리
-	void RecoverStamina(); // 스태미너 회복
 	void ManageGold(int32 Amount); // 골드 관리
 	
 	// UI 표시
@@ -78,12 +86,17 @@ private:
 	FVector2D InputDirection = FVector2D::ZeroVector;
 	// bool bUsingGrenadeGun = true;
 	// bool bSniperAim = false;
+	bool bIgnoreMove = false;
+	bool bOverMove = false;
+	FVector OverMoveDirection = FVector::ZeroVector;
+	float OverMoveScale = 1.0f;
+	bool bOverControl = false;
+	UPROPERTY() UFocusedComponent* TargetFocusedC;
 
 	// 틱 프로시저
 	void TickMovement(float DeltaTime);
-	bool bOverrideTickMovement = false;
-	FVector OverrideMovementDirection = FVector::ZeroVector;
 	void TickStamina(float DeltaTime); // stamina natural recovery
+	void TickFocusControl(float DeltaTime);
 
 	// 위젯
 	void InitializeMiniMap();
@@ -98,3 +111,17 @@ private:
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량
 	int32 CurrentGold = 0;
 };
+
+inline void AMainCharacter::StartFocusControlWithTarget(UFocusedComponent* Target)
+{
+	TargetFocusedC = Target;
+	bOverControl = true;
+
+	Target->OnDestroyed.AddDynamic(this, &AMainCharacter::EndFocusControl);
+}
+
+inline void AMainCharacter::EndFocusControl()
+{
+	TargetFocusedC = nullptr;
+	bOverControl = false;
+}

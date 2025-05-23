@@ -115,7 +115,7 @@ void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	if (auto MainChar = Cast<AMainCharacter>(GetOwner()))
 	{
-		MainChar->SetOverrideMovement(false);
+		MainChar->SetOverMove(false);
 	}
 
 	if (UAnimInstance* AnimInst = Cast<UAnimInstance>(Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance()))
@@ -209,7 +209,9 @@ void UCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	AnimInst->Montage_Play(ParryMontage);
 	AnimInst->Montage_JumpToSection(ParryMontageSections[1]);
 	Me->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Me->bUseControllerRotationYaw = true;
 	Me->FaceRotation(Me2YouRot);
+	Me->bUseControllerRotationYaw = false;
 	Me->GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	Performer->PauseMovement();
@@ -217,22 +219,24 @@ void UCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	Performer->OnStaggered.Broadcast();
 	AnimInstOfYou->Montage_Play(StaggerMontage);
 	You->GetCharacterMovement()->bOrientRotationToMovement = false;
+	You->bUseControllerRotationYaw = true;
 	You->FaceRotation(You2MeRot);
+	You->bUseControllerRotationYaw = false;
 	You->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void UCombatComponent::PauseMovement()
 {
-	if (auto Char = Cast<ACharacter>(GetOwner()))
+	if (auto MC = Cast<AMainCharacter>(GetOwner()))
 	{
-		Char->GetCharacterMovement()->DisableMovement();
+		MC->SetIgnoreMove(true);
 	}
 }
 
 void UCombatComponent::ResumeMovement()
 {
-	if (auto Char = Cast<ACharacter>(GetOwner()))
+	if (auto MC = Cast<AMainCharacter>(GetOwner()))
 	{
-		Char->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		MC->SetIgnoreMove(false);
 	}
 }
