@@ -15,6 +15,8 @@ class GEPTEMPLATE_API UGameSettingsInstance : public UGameInstance
 	GENERATED_BODY()
 	
 public:
+	virtual void Init() override;
+	
 	UPROPERTY(BlueprintReadWrite, Category="Audio") float BGMVolume = 1.0f;
 	UPROPERTY(BlueprintReadWrite, Category="Audio")	float SFXVolume = 1.0f;
 

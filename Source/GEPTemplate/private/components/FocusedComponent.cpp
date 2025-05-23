@@ -30,6 +30,8 @@ void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 	FocusedWidgetC->DestroyComponent();
 	FocusedWidgetC = nullptr;
 
+	OnDestroyed.Broadcast();
+	
 	// 중요: 이 컴포넌트와 위젯이 nullptr이 될 때, 참조될 수 있는 위치도 cascade 삭제로 null-safe 처리
 	RecentlyFocusedCList.Remove(this);
 	if (CurrentFocusC == this)
@@ -40,6 +42,8 @@ void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 
 void UFocusedComponent::SetFocus(const bool Value)
 {
+	if (!FocusedWidgetC) return;
+	
 	if (const auto FocusedWidget = Cast<UFocusedWidget>(FocusedWidgetC->GetUserWidgetObject()))
 	{
 		// 집중점을 활성화할 때는 직전 집중 대상을 비활성화하고, 사용 기록도 추가함

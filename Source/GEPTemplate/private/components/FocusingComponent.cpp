@@ -1,6 +1,6 @@
 ﻿#include "components/FocusingComponent.h"
 
-#include "GEPTemplate.h"
+#include "allies/MainCharacter.h"
 #include "components/FocusedComponent.h"
 
 
@@ -59,6 +59,12 @@ void UFocusingComponent::CycleTarget()
 		
 		// 있다면 그들의 집중점을 비활성화하고, 사용 이력을 제거한다.
 		UFocusedComponent::FlushRecentlyFocusedCList();
+
+		// 주체의 컨트롤러 회전을 기존 방식으로 복구한다.
+		if (auto MC = Cast<AMainCharacter>(GetOwner()))
+		{
+			MC->EndFocusControl();
+		}
 	}
 
 	// 스캔된 대상(들)이 존재할 때, 그 중 사용 이력이 있는 대상을 현재 리스트에서 제거한다.
@@ -72,14 +78,27 @@ void UFocusingComponent::CycleTarget()
 	// 남은 완전 새로운 대상 리스트에 하나라도 있는 경우,
 	if (FocusedCList.Num() > 0)
 	{
-		// 그 하나에게 있는 집중점을 활성화하고, 사용 이력을 남기며, 최근에 사용한 대상들의 집중접을 비활성화한다.
-		FocusedCList.Pop()->SetFocus(true);
+		// 그 하나에게 있는 집중점을 활성화하고, 사용 이력을 남기며, 최근에 사용한 대상들의 집중점을 비활성화한다.
+		auto NowFocusedC = FocusedCList.Pop();
+		NowFocusedC->SetFocus(true);
+		
+		if (auto MC = Cast<AMainCharacter>(GetOwner()))
+		{
+			MC->StartFocusControlWithTarget(NowFocusedC);
+			// MC->GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
 	}
 	// 스캔된 대상(들)이 존재하면서 동시에 사용이력이 없는 대상이 하나도 없는 경우,
 	else
 	{
 		// 최근에 사용한 대상들의 집중점을 비활성화하고, 사용 이력을 제거한다.
 		UFocusedComponent::FlushRecentlyFocusedCList();
+		
+		// 주체의 컨트롤러 회전을 기존 방식으로 복구한다.
+		if (auto MC = Cast<AMainCharacter>(GetOwner()))
+		{
+			MC->EndFocusControl();
+		}
 	}
 }
 
