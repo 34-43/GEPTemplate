@@ -49,7 +49,7 @@ public:
 	{
 		for (const auto RecentlyFocusedC : RecentlyFocusedCList)
 		{
-			if (RecentlyFocusedC->FocusedWidgetC)
+			if (RecentlyFocusedC && RecentlyFocusedC->FocusedWidgetC)
 			{
 				RecentlyFocusedC->SetFocus(false);
 			}

@@ -79,13 +79,16 @@ void UFocusingComponent::CycleTarget()
 	if (FocusedCList.Num() > 0)
 	{
 		// 그 하나에게 있는 집중점을 활성화하고, 사용 이력을 남기며, 최근에 사용한 대상들의 집중점을 비활성화한다.
-		auto NowFocusedC = FocusedCList.Pop();
-		NowFocusedC->SetFocus(true);
-		
-		if (auto MC = Cast<AMainCharacter>(GetOwner()))
+		const auto NowFocusedC = FocusedCList.Pop();
+		if (NowFocusedC && NowFocusedC->FocusedWidgetC)
 		{
-			MC->StartFocusControlWithTarget(NowFocusedC);
-			// MC->GetCharacterMovement()->bOrientRotationToMovement = false;
+			NowFocusedC->SetFocus(true);
+
+			if (const auto MC = Cast<AMainCharacter>(GetOwner()))
+			{
+				MC->StartFocusControlWithTarget(NowFocusedC);
+				// MC->GetCharacterMovement()->bOrientRotationToMovement = false;
+			}
 		}
 	}
 	// 스캔된 대상(들)이 존재하면서 동시에 사용이력이 없는 대상이 하나도 없는 경우,
@@ -95,7 +98,7 @@ void UFocusingComponent::CycleTarget()
 		UFocusedComponent::FlushRecentlyFocusedCList();
 		
 		// 주체의 컨트롤러 회전을 기존 방식으로 복구한다.
-		if (auto MC = Cast<AMainCharacter>(GetOwner()))
+		if (const auto MC = Cast<AMainCharacter>(GetOwner()))
 		{
 			MC->EndFocusControl();
 		}
