@@ -2,15 +2,10 @@
 
 #include "Components/Image.h"
 
-void UFocusedWidget::SetFocus(const bool Value)
+void UFocusedWidget::NativeConstruct()
 {
-	bFocused = Value;
-	if (Value)
+	if (FocusDot)
 	{
 		FocusDot->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		FocusDot->SetVisibility(ESlateVisibility::Hidden);
 	}
 }

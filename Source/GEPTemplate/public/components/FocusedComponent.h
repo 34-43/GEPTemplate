@@ -52,8 +52,8 @@ public:
 			if (RecentlyFocusedC && RecentlyFocusedC->FocusedWidgetC)
 			{
 				RecentlyFocusedC->SetFocus(false);
+				RecentlyFocusedC->SetRecentlyFocused(false);
 			}
-			RecentlyFocusedC->SetRecentlyFocused(false);
 		}
 		RecentlyFocusedCList.Empty();
 	}

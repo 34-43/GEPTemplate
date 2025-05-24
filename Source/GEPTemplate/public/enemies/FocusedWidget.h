@@ -10,11 +10,8 @@ class GEPTEMPLATE_API UFocusedWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	virtual void NativeConstruct() override;
+	
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget))
 	class UImage* FocusDot;
-
-	void SetFocus(bool Value);
-
-private:
-	bool bFocused = false;
 };
