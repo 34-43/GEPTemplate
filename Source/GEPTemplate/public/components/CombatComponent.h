@@ -48,6 +48,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* RollMontage;
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* ParryMontage;
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* StaggerMontage;
+	UPROPERTY(EditDefaultsOnly, Category = "Animation") UAnimMontage* DeathMontage;
 
 	// 특정 애니메이션 몽타주 리소스의 섹션 이름을 CDO에서 지정하기 위한 속성.
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") TArray<FName> AttackMontageSections;

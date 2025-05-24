@@ -443,7 +443,10 @@ void AMainCharacter::ShowDeathUI()
 
 void AMainCharacter::HandleDeath()
 {
-	// TODO: 몽타주 재생 추가
+	PlayAnimMontage(CombatC->DeathMontage);
+	SetIgnoreMove(true);
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ShowDeathUI();
 }
 

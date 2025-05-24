@@ -5,7 +5,6 @@
 #include "DrawDebugHelpers.h"
 #include "allies/MainCharacter.h"
 #include "components/HealthComponent.h"
-#include "enemies/BaseEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 
@@ -29,6 +28,9 @@ UCombatComponent::UCombatComponent()
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> StaggerMontageObject(
 		TEXT("/Game/Features/Mannequin/Animations/Montage/StaggerMontage.StaggerMontage"));
 	if (StaggerMontageObject.Succeeded()) { StaggerMontage = StaggerMontageObject.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DeathMontageObject(
+		TEXT("/Game/Features/Mannequin/Animations/Montage/DeathMontage.DeathMontage"));
+	if (DeathMontageObject.Succeeded()) { DeathMontage = DeathMontageObject.Object; }
 }
 
 
@@ -112,6 +114,8 @@ void UCombatComponent::Parry()
 void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (bInterrupted) return;
+
+	if (Montage == DeathMontage) return;
 
 	if (auto MainChar = Cast<AMainCharacter>(GetOwner()))
 	{
