@@ -5,7 +5,6 @@
 #include "DrawDebugHelpers.h"
 #include "allies/MainCharacter.h"
 #include "components/HealthComponent.h"
-#include "enemies/BaseEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 
@@ -29,6 +28,9 @@ UCombatComponent::UCombatComponent()
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> StaggerMontageObject(
 		TEXT("/Game/Features/Mannequin/Animations/Montage/StaggerMontage.StaggerMontage"));
 	if (StaggerMontageObject.Succeeded()) { StaggerMontage = StaggerMontageObject.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DeathMontageObject(
+		TEXT("/Game/Features/Mannequin/Animations/Montage/DeathMontage.DeathMontage"));
+	if (DeathMontageObject.Succeeded()) { DeathMontage = DeathMontageObject.Object; }
 }
 
 
@@ -113,9 +115,11 @@ void UCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (bInterrupted) return;
 
+	if (Montage == DeathMontage) return;
+
 	if (auto MainChar = Cast<AMainCharacter>(GetOwner()))
 	{
-		MainChar->SetOverrideMovement(false);
+		MainChar->SetOverMove(false);
 	}
 
 	if (UAnimInstance* AnimInst = Cast<UAnimInstance>(Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance()))
@@ -209,7 +213,9 @@ void UCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	AnimInst->Montage_Play(ParryMontage);
 	AnimInst->Montage_JumpToSection(ParryMontageSections[1]);
 	Me->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Me->bUseControllerRotationYaw = true;
 	Me->FaceRotation(Me2YouRot);
+	Me->bUseControllerRotationYaw = false;
 	Me->GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	Performer->PauseMovement();
@@ -217,22 +223,24 @@ void UCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	Performer->OnStaggered.Broadcast();
 	AnimInstOfYou->Montage_Play(StaggerMontage);
 	You->GetCharacterMovement()->bOrientRotationToMovement = false;
+	You->bUseControllerRotationYaw = true;
 	You->FaceRotation(You2MeRot);
+	You->bUseControllerRotationYaw = false;
 	You->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void UCombatComponent::PauseMovement()
 {
-	if (auto Char = Cast<ACharacter>(GetOwner()))
+	if (auto MC = Cast<AMainCharacter>(GetOwner()))
 	{
-		Char->GetCharacterMovement()->DisableMovement();
+		MC->SetIgnoreMove(true);
 	}
 }
 
 void UCombatComponent::ResumeMovement()
 {
-	if (auto Char = Cast<ACharacter>(GetOwner()))
+	if (auto MC = Cast<AMainCharacter>(GetOwner()))
 	{
-		Char->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		MC->SetIgnoreMove(false);
 	}
 }

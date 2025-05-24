@@ -5,8 +5,6 @@
 #include "Components/ActorComponent.h"
 #include "FocusingComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTargetChangedSignature, UFocusedComponent*, NewTarget);
-
 /**
  * 메인 플레이어 전용으로 구현된 "집중 컴포넌트"로, 소유자의 메서드 호출을 통한 '플레이어'->'피집중 액터'에 관한 동작의 책임을 가진다.
  * @author 34-43
@@ -25,9 +23,6 @@ protected:
 public:
 	// --- 초기값 ---
 	UPROPERTY(EditDefaultsOnly, Category = "Focusing") float ScanRange = 800.0f;
-
-	// --- 이벤트 ---
-	UPROPERTY(BlueprintAssignable, Category="Focusing") FOnTargetChangedSignature OnTargetChanged;
 
 	// --- 상호작용 (소유자에서 호출) ---
 	UFUNCTION(BlueprintCallable, Category = "Focusing") void ScanTargets();

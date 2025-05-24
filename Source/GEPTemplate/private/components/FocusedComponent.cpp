@@ -13,6 +13,7 @@ UFocusedComponent::UFocusedComponent()
 	FocusedWidgetC->SetDrawSize(FVector2D(30, 30));
 	FocusedWidgetC->SetRelativeLocation(FVector::ZeroVector);
 	FocusedWidgetC->SetWidgetSpace(EWidgetSpace::Screen);
+	FocusedWidgetC->SetVisibility(false);
 	static ConstructorHelpers::FClassFinder<UUserWidget> FocusedWidgetBP(
 		TEXT("/Game/UI/WBP_Focusing.WBP_Focusing_C"));
 	if (FocusedWidgetBP.Succeeded()) { FocusedWidgetC->SetWidgetClass(FocusedWidgetBP.Class); }
@@ -27,9 +28,11 @@ void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 {
 	Super::DestroyComponent(bPromoteChildren);
 
+	OnDestroyed.Broadcast();
+
 	FocusedWidgetC->DestroyComponent();
 	FocusedWidgetC = nullptr;
-
+	
 	// 중요: 이 컴포넌트와 위젯이 nullptr이 될 때, 참조될 수 있는 위치도 cascade 삭제로 null-safe 처리
 	RecentlyFocusedCList.Remove(this);
 	if (CurrentFocusC == this)
@@ -40,21 +43,31 @@ void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 
 void UFocusedComponent::SetFocus(const bool Value)
 {
-	if (const auto FocusedWidget = Cast<UFocusedWidget>(FocusedWidgetC->GetUserWidgetObject()))
+	UE_LOG(LogTemp, Warning,
+		TEXT("SetFocus: this=%p, FocusedWidgetC=%p, Valid=%d, PendingKill=%d"),
+		this,
+		FocusedWidgetC,
+		FocusedWidgetC && FocusedWidgetC->IsValidLowLevel(),
+		FocusedWidgetC && FocusedWidgetC->IsPendingKill()
+	);
+	
+	if (!FocusedWidgetC || !IsValid(FocusedWidgetC)) return;
+	
+	// 직전 집중 대상을 비활성화
+	if (Value && CurrentFocusC && CurrentFocusC->FocusedWidgetC)
 	{
-		// 집중점을 활성화할 때는 직전 집중 대상을 비활성화하고, 사용 기록도 추가함
-		if (Value)
-		{
-			if (CurrentFocusC && CurrentFocusC->FocusedWidgetC)
-			{
-				CurrentFocusC->SetFocus(false);
-			}
-			CurrentFocusC = this;
-			SetRecentlyFocused(true);
-			RecentlyFocusedCList.Add(this);
-		}
-		FocusedWidget->SetFocus(Value);
+		CurrentFocusC->FocusedWidgetC->SetVisibility(false);
 	}
+
+	// 집중점 활성화 및 사용 이력 추가
+	if (Value)
+	{
+		CurrentFocusC = this;
+		SetRecentlyFocused(true);
+		RecentlyFocusedCList.Add(this);
+	}
+	
+	FocusedWidgetC->SetVisibility(Value);
 }
 
 // --- 정적 멤버 정의 ---

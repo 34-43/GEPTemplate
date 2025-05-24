@@ -16,6 +16,7 @@
 #include "components/HealthComponent.h"
 #include "components/StaminaComponent.h"
 #include "Components/TextBlock.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 AMainCharacter::AMainCharacter()
@@ -175,6 +176,7 @@ void AMainCharacter::Tick(float DeltaTime)
 
 	TickMovement(DeltaTime);
 	TickStamina(DeltaTime);
+	TickFocusControl(DeltaTime);
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -199,10 +201,22 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Focus", IE_Pressed, FocusingC, &UFocusingComponent::CycleTarget);
 }
 
-void AMainCharacter::Turn(const float Value) { AddControllerYawInput(Value); }
-void AMainCharacter::LookUp(const float Value) { AddControllerPitchInput(Value); }
-void AMainCharacter::MoveForward(const float Value) { InputDirection.X = Value; }
-void AMainCharacter::MoveRight(const float Value) { InputDirection.Y = Value; }
+void AMainCharacter::Turn(const float Value)
+{
+	if (!bOverControl) AddControllerYawInput(Value);
+}
+void AMainCharacter::LookUp(const float Value)
+{
+	if (!bOverControl) AddControllerPitchInput(Value);
+}
+void AMainCharacter::MoveForward(const float Value)
+{
+	if (!bOverMove) InputDirection.X = Value;
+}
+void AMainCharacter::MoveRight(const float Value)
+{
+	if (!bOverMove) InputDirection.Y = Value;
+}
 
 void AMainCharacter::InputJump()
 {
@@ -278,10 +292,22 @@ void AMainCharacter::Roll()
 
 	if (StaminaC->CurrentStamina < 10.0f) return;
 
-	SetOverrideMovement(true);
-	const FVector Forward = GetActorForwardVector();
-	SetOverrideMovement(FVector(Forward.X, Forward.Y, 0) * 300.0f);
-
+	SetOverMove(true);
+	const FVector InputVector = FVector(InputDirection.X, InputDirection.Y, 0);
+	if (InputVector == FVector::ZeroVector)
+	{
+		// 제자리에서 구를 경우
+		SetOverMoveParams(GetActorForwardVector(), 300.0f);
+	}
+	else
+	{
+		// 방향 입력 중에 구를 경우
+		bUseControllerRotationYaw = true;
+		FaceRotation(InputVector.Rotation());
+		bUseControllerRotationYaw = false;
+		SetOverMoveParams(InputVector, 300.0f);
+	}
+	
 	CombatC->SetCombatState(ECombatState::Rolling);
 	// 구르기 몽타주 설정
 	PlayAnimMontage(CombatC->RollMontage);
@@ -294,23 +320,14 @@ void AMainCharacter::Roll()
 	StaminaC->UpdateStamina(-10.0f);
 }
 
-
-void AMainCharacter::SetOverrideMovement(bool value)
-{
-	bOverrideTickMovement = value;
-}
-
-void AMainCharacter::SetOverrideMovement(const FVector NewDirection)
-{
-	OverrideMovementDirection = NewDirection;
-}
-
 void AMainCharacter::TickMovement(float DeltaTime)
 {
-	if (bOverrideTickMovement)
+	if (bOverMove)
 	{
-		SetActorLocation(GetActorLocation() + OverrideMovementDirection * DeltaTime);
+		SetActorLocation(GetActorLocation() + OverMoveDirection * OverMoveScale * DeltaTime);
+		AddMovementInput(OverMoveDirection, OverMoveScale * DeltaTime);
 	}
+	else if (bIgnoreMove) {}
 	else
 	{
 		InputDirection = InputDirection.GetRotated(GetControlRotation().Yaw);
@@ -322,6 +339,25 @@ void AMainCharacter::TickMovement(float DeltaTime)
 void AMainCharacter::TickStamina(float DeltaTime)
 {
 	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate);
+}
+
+void AMainCharacter::TickFocusControl(float DeltaTime)
+{
+	if (bOverControl && TargetFocusedC && TargetFocusedC->GetOwner())
+	{
+		const FVector CameraL = GetActorLocation();
+		const FVector TargetL = TargetFocusedC->GetOwner()->GetActorLocation();
+		FRotator DesiredR = UKismetMathLibrary::FindLookAtRotation(CameraL, TargetL);
+		DesiredR.Add(-25, 0, 0);
+
+		FRotator OldR = GetControlRotation();
+		FRotator NewR = FMath::RInterpTo(OldR, DesiredR, DeltaTime, 10.0f);
+
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			PC->SetControlRotation(NewR);
+		}
+	}
 }
 
 // 미니맵 생성 함수
@@ -407,7 +443,10 @@ void AMainCharacter::ShowDeathUI()
 
 void AMainCharacter::HandleDeath()
 {
-	// TODO: 몽타주 재생 추가
+	PlayAnimMontage(CombatC->DeathMontage);
+	SetIgnoreMove(true);
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ShowDeathUI();
 }
 
