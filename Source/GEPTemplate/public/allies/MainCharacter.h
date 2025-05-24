@@ -5,6 +5,8 @@
 #include "GameFramework/Character.h"
 #include "MainCharacter.generated.h"
 
+class UInteractionComponent;
+
 UCLASS()
 class GEPTEMPLATE_API AMainCharacter : public ACharacter
 {
@@ -53,6 +55,9 @@ public:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void InputJump();
+	void InputInteract();
+	void SetOverrideMovement(bool value);
+	void SetOverrideMovement(FVector NewDirection);
 	// void InputFire();
 	// void InputChangeGrenadeGun();
 	// void InputChangeSniperGun();
@@ -70,6 +75,8 @@ public:
 	UFUNCTION() void EndFocusControl();
 	
 	// 상태 변경
+	void ManageStamina(float Amount); // 스태미너 관리
+	void RecoverStamina(); // 스태미너 회복
 	void ManageGold(int32 Amount); // 골드 관리
 	
 	// UI 표시
@@ -81,6 +88,11 @@ private:
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();
 	UFUNCTION() void HandleStaggered();
+
+	// 상호작용 물체 처리
+	UInteractionComponent* CurrentInteractionComponent = nullptr;
+	void UpdateCurrentInteractionComponent();
+	FTimerHandle UpdateInteractionTimer;
 	
 	// 로직
 	FVector2D InputDirection = FVector2D::ZeroVector;
