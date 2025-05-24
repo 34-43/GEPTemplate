@@ -16,6 +16,9 @@
 #include "components/HealthComponent.h"
 #include "components/StaminaComponent.h"
 #include "Components/TextBlock.h"
+#include "components/InteractionComponent.h"
+#include "TimerManager.h"
+
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -168,6 +171,9 @@ void AMainCharacter::BeginPlay()
 	CombatC->OnDamaged.AddDynamic(this, &AMainCharacter::HandleDamaged);
 	CombatC->OnParried.AddDynamic(this, &AMainCharacter::HandleParried);
 	CombatC->OnStaggered.AddDynamic(this, &AMainCharacter::HandleStaggered);
+
+	// 0.2초 마다 주변 상호작용 물체 검색
+	GetWorldTimerManager().SetTimer(UpdateInteractionTimer, this, &AMainCharacter::UpdateCurrentInteractionComponent, 0.2f, true);
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -192,6 +198,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// PlayerInputComponent->BindAction("SniperGun", IE_Pressed, this, &AMainCharacter::InputChangeSniperGun);
 	// PlayerInputComponent->BindAction("SniperAim", IE_Pressed, this, &AMainCharacter::InputSniperAim);
 	// PlayerInputComponent->BindAction("SniperAim", IE_Released, this, &AMainCharacter::InputSniperAim);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMainCharacter::InputInteract);
 
 	// 전투 컴포넌트 바인드
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
@@ -216,6 +223,72 @@ void AMainCharacter::MoveForward(const float Value)
 void AMainCharacter::MoveRight(const float Value)
 {
 	if (!bOverMove) InputDirection.Y = Value;
+}
+
+void AMainCharacter::InputInteract()
+{
+	if (CurrentInteractionComponent && CurrentInteractionComponent->IsInRange())
+	{
+		CurrentInteractionComponent->TryInteract();
+	}
+}
+
+void AMainCharacter::UpdateCurrentInteractionComponent()
+{
+	FVector Center = GetActorLocation();
+	float Radius = 250.f; // 탐지 범위 설정, InteractionComponent과 동일하게
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this); // 자신 제외
+
+	bool bHit = GetWorld()->OverlapMultiByObjectType(
+		Overlaps,
+		Center,
+		FQuat::Identity,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic),
+		FCollisionShape::MakeSphere(Radius),
+		Params
+	);
+
+	UInteractionComponent* Nearest = nullptr;
+	float MinDist = FLT_MAX;
+
+	if (bHit)
+	{
+		for (auto& Result : Overlaps)
+		{
+			if (AActor* OverlappedActor = Result.GetActor())
+			{
+				UInteractionComponent* Interaction = OverlappedActor->FindComponentByClass<UInteractionComponent>();
+				if (Interaction)
+				{
+					float Dist = FVector::Dist(Center, OverlappedActor->GetActorLocation());
+					if (Dist < MinDist)
+					{
+						MinDist = Dist;
+						Nearest = Interaction;
+					}
+				}
+			}
+		}
+	}
+
+	// 이전 상호작용 물체 UI/Highlight 끄기
+	if (CurrentInteractionComponent && CurrentInteractionComponent != Nearest)
+	{
+		CurrentInteractionComponent->ShowUI(false);
+		CurrentInteractionComponent->ShowHighlight(false);
+	}
+
+	// 새로운 물체 UI/Highlight 켜기
+	if (Nearest && Nearest != CurrentInteractionComponent)
+	{
+		Nearest->ShowUI(true);
+		Nearest->ShowHighlight(true);
+	}
+	
+	CurrentInteractionComponent = Nearest;
 }
 
 void AMainCharacter::InputJump()
