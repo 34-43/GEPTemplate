@@ -10,6 +10,7 @@ AWaterDispenser::AWaterDispenser()
 	PrimaryActorTick.bCanEverTick = false;
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Mesh->SetCollisionProfileName(TEXT("Object"));
 	RootComponent = Mesh;
 
 	// 상호작용 컴포넌트 설정

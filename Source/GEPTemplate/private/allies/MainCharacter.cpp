@@ -227,21 +227,20 @@ void AMainCharacter::MoveRight(const float Value)
 
 void AMainCharacter::InputInteract()
 {
-	if (CurrentInteractionComponent && CurrentInteractionComponent->IsInRange())
-	{
-		CurrentInteractionComponent->TryInteract();
-	}
+	if (CurrentInteractionComponent) CurrentInteractionComponent->TryInteract();
 }
 
 void AMainCharacter::UpdateCurrentInteractionComponent()
 {
 	FVector Center = GetActorLocation();
-	float Radius = 250.f; // 탐지 범위 설정, InteractionComponent과 동일하게
+	float Radius = UInteractionComponent::InteractRange; // 탐지 범위 설정
 
-	TArray<FOverlapResult> Overlaps;
+	// 자신은 제외하고 탐색
 	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this); // 자신 제외
-
+	Params.AddIgnoredActor(this);
+	
+	// 구형 영역 내 겹치는 액터 찾기
+	TArray<FOverlapResult> Overlaps;
 	bool bHit = GetWorld()->OverlapMultiByObjectType(
 		Overlaps,
 		Center,
@@ -263,7 +262,7 @@ void AMainCharacter::UpdateCurrentInteractionComponent()
 				UInteractionComponent* Interaction = OverlappedActor->FindComponentByClass<UInteractionComponent>();
 				if (Interaction)
 				{
-					float Dist = FVector::Dist(Center, OverlappedActor->GetActorLocation());
+					float Dist = Interaction->GetDistanceToPlayer();
 					if (Dist < MinDist)
 					{
 						MinDist = Dist;

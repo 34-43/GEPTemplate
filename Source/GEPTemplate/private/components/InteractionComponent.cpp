@@ -9,16 +9,10 @@
 
 // 상호작용 액터
 #include "objects/WaterDispenser.h"
+#include "objects/ExplosiveBarrel.h"
 
-AActor* UInteractionComponent::GetOwnerActor() const
-{
-	return OwnerActor ? OwnerActor : GetOwner();
-}
-
-UInteractionComponent::UInteractionComponent()
-{
-	PrimaryComponentTick.bCanEverTick = false;
-}
+// 기본 반경 값 설정
+float UInteractionComponent::InteractRange = 250.f;
 
 void UInteractionComponent::BeginPlay()
 {
@@ -51,12 +45,22 @@ void UInteractionComponent::ShowUI(bool bShow)
 
 void UInteractionComponent::TryInteract()
 {
-	if (!OwnerActor) return;
-	
+	if (!OwnerActor || !PlayerRef) return;
+	// 액터를 추가하세요
 	if (auto WaterDispenser = Cast<AWaterDispenser>(OwnerActor))
 	{
 		AActor* Player = PlayerRef;
 		WaterDispenser->Interact(Player);
+	}
+	else if (auto ExplosiveBarrel = Cast<AExplosiveBarrel>(OwnerActor))
+	{
+		AActor* Player = PlayerRef;
+		ExplosiveBarrel->Interact(Player);
+	}
+	else
+	{
+		// 미래에 대비한 fallback
+		UE_LOG(LogTemp, Warning, TEXT("Unknown interactable actor: %s"), *OwnerActor->GetName());
 	}
 }
 
@@ -67,6 +71,13 @@ bool UInteractionComponent::IsInRange() const
 
 float UInteractionComponent::GetDistanceToPlayer() const
 {
-	if (!OwnerActor || !PlayerRef) return FLT_MAX;
-	return FVector::Dist(PlayerRef->GetActorLocation(), OwnerActor->GetActorLocation());
+	if (!OwnerActor) return FLT_MAX;
+	if (!PlayerRef)
+	{
+		// PlayerRef가 없다면 GetWorld()에서 플레이어 폰을 다시 가져오는 시도
+		APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+		if (!PlayerPawn) return FLT_MAX;
+		return FVector::Dist(OwnerActor->GetActorLocation(), PlayerPawn->GetActorLocation());
+	}
+	return FVector::Dist(OwnerActor->GetActorLocation(), PlayerRef->GetActorLocation());
 }
