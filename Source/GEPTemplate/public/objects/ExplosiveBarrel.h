@@ -57,6 +57,8 @@ public:
 	UFUNCTION() void Explode();
 	
 private:
+	bool bHasExploded = false;
+	
 	FTimerHandle DestroyTimerHandle;
 	void OnDestroyTimerExpired();
 };

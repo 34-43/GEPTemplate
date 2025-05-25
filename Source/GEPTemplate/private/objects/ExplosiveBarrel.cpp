@@ -98,6 +98,10 @@ void AExplosiveBarrel::OnConstruction(const FTransform& Transform)
 
 void AExplosiveBarrel::Explode()
 {
+	// 이미 폭발한 경우 무시
+	if (bHasExploded) return;
+	bHasExploded = true;
+	
 	if (ExplosionEffect) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
 	if (ExplosionSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, GetActorLocation());
 	
