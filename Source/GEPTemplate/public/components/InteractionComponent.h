@@ -14,6 +14,7 @@ class GEPTEMPLATE_API UInteractionComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	UInteractionComponent();
 	// UI와 테두리 On/Off
 	UFUNCTION(BlueprintCallable) void ShowHighlight(bool bShow);
 	UFUNCTION(BlueprintCallable) void ShowUI(bool bShow);

@@ -6,11 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "ExplosiveBarrel.generated.h"
 
-class UStaticMeshComponent;
-class UInteractionComponent;
-class UHealthComponent;
-class URadialForceComponent;
-
 UCLASS()
 class GEPTEMPLATE_API AExplosiveBarrel : public AActor
 {
@@ -20,14 +15,18 @@ public:
 	// Sets default values for this actor's properties
 	AExplosiveBarrel();
 
+	// 상호작용 컴포넌트
+	UPROPERTY(VisibleAnywhere) class UInteractionComponent* InteractC;
+	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
+	UPROPERTY(VisibleAnywhere) class UHealthFloatingComponent* HealthFloatingC;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// 박스 컴포넌트
+	UPROPERTY(EditDefaultsOnly) class UBoxComponent* BoxComp;
 	// 드럼통 메쉬 (Static Mesh)
-	UPROPERTY(VisibleAnywhere) UStaticMeshComponent* Mesh;
-	// 상호작용 컴포넌트
-	UPROPERTY(VisibleAnywhere) UInteractionComponent* InteractC;
+	UPROPERTY(EditDefaultsOnly) UStaticMeshComponent* Mesh;
 
 	// 이펙트, 사운드 관련
 	UPROPERTY(EditDefaultsOnly, Category = Effects)	UParticleSystem* ExplosionEffect;
@@ -35,7 +34,7 @@ protected:
 
 	
 	// 폭발력 컴포넌트
-	UPROPERTY(VisibleAnywhere) URadialForceComponent* RadialForce;
+	UPROPERTY(VisibleAnywhere) class URadialForceComponent* RadialForce;
 	// 파편 메시 6개 (자식 컴포넌트)
 	UPROPERTY(VisibleAnywhere) UStaticMeshComponent* Fragment0;
 	UPROPERTY(VisibleAnywhere) UStaticMeshComponent* Fragment1;
@@ -49,16 +48,15 @@ protected:
 	// 폭발 데미지
 	UPROPERTY(EditAnywhere, Category = "Explosion")	float ExplosionDamage = 25.f;
 	
-	virtual void OnConstruction(const FTransform& Transform) override;
-	
 public:
 	// 상호작용 함수 (InteractionComponent에서 호출)
 	void Interact(AActor* Caller);
 	UFUNCTION() void Explode();
-	
+
 private:
+	UFUNCTION()	void OnHealthChanged(int32 NewHealth, int32 MaxHealth);
 	bool bHasExploded = false;
-	
+	UPROPERTY() APlayerController* MainPlayerController;
 	FTimerHandle DestroyTimerHandle;
 	void OnDestroyTimerExpired();
 };
