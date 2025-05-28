@@ -4,26 +4,37 @@
 #include "components/InteractionComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Actor.h"
 #include "components/HealthComponent.h"
-#include "Engine/Engine.h"
-#include "Engine/StaticMeshActor.h"
+#include "components/HealthFloatingComponent.h"
 
 AExplosiveBarrel::AExplosiveBarrel()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
+	// Root로 박스 콜리전 생성
+	BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("RootCollision"));
+	BoxComp->SetBoxExtent(FVector(30.f, 30.f, 45.f));
+	BoxComp->SetRelativeLocation(FVector(0.f, 0.f, BoxComp->GetScaledBoxExtent().Z));
+	RootComponent = BoxComp;
+	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetCollisionProfileName(TEXT("Object"));
-	RootComponent = Mesh;
+	Mesh->SetupAttachment(RootComponent);
 
 	// 상호작용 컴포넌트 설정
 	InteractC = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 
-	// 폭발력
+	// 체력 컴포넌트 설정
+	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	HealthC->MaxHealth = 50.0;
+	HealthFloatingC = CreateDefaultSubobject<UHealthFloatingComponent>(TEXT("HealthFloatingComponent"));
+	
+	// 폭발력 (이펙트용)
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
-	RadialForce->SetupAttachment(RootComponent);
+	RadialForce->SetupAttachment(Mesh);
 	RadialForce->Radius = 400.f;
 	RadialForce->ImpulseStrength = 2000.f;
 	RadialForce->bImpulseVelChange = true;
@@ -36,7 +47,7 @@ AExplosiveBarrel::AExplosiveBarrel()
 	Fragment0->SetMobility(EComponentMobility::Movable);
 	Fragment0->SetSimulatePhysics(false);
 	Fragment0->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 기본은 충돌 끔
-	
+
 	Fragment1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Fragment1"));
 	Fragment1->SetupAttachment(Mesh);
 	Fragment1->SetMobility(EComponentMobility::Movable);
@@ -71,29 +82,18 @@ AExplosiveBarrel::AExplosiveBarrel()
 void AExplosiveBarrel::BeginPlay()
 {
 	Super::BeginPlay();
+	if (HealthC)
+	{
+		HealthC->OnHealthChanged.AddDynamic(this, &AExplosiveBarrel::OnHealthChanged);
+	}
+	// UI 렌더링에 필요한 1P 컨트롤러 지정
+	MainPlayerController = UGameplayStatics::GetPlayerController(this, 0);
 }
 
 void AExplosiveBarrel::Interact(AActor* Caller)
 {
 	if (!Caller) return;
-	UE_LOG(LogTemp, Log, TEXT("!! 폭 * 8 !!"));
 	Explode();
-}
-
-void AExplosiveBarrel::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	if (Mesh)
-	{
-		FVector CurrentLocation = Mesh->GetRelativeLocation();  // 현재 위치
-		FVector Origin, BoxExtent;
-		Mesh->GetLocalBounds(Origin, BoxExtent);
-
-		// Z만 조절, 나머지는 그대로 유지
-		CurrentLocation.Z = BoxExtent.Z;
-		Mesh->SetRelativeLocation(CurrentLocation);
-	}
 }
 
 void AExplosiveBarrel::Explode()
@@ -101,31 +101,39 @@ void AExplosiveBarrel::Explode()
 	// 이미 폭발한 경우 무시
 	if (bHasExploded) return;
 	bHasExploded = true;
-	
+	// 이펙트, 사운드
 	if (ExplosionEffect) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
 	if (ExplosionSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, GetActorLocation());
-	
+
 	// 1. 메인 메시 숨기기 (또는 Destroy)
-	Mesh->SetVisibility(false);
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (Mesh)
+	{
+		Mesh->SetVisibility(false);
+		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
 	// 2. 파편 활성화: 물리 켜고 충돌 켜기
-	UStaticMeshComponent* Fragments[] = { Fragment0, Fragment1, Fragment2, Fragment3, Fragment4, Fragment5 };
+	UStaticMeshComponent* Fragments[] = {Fragment0, Fragment1, Fragment2, Fragment3, Fragment4, Fragment5};
 	for (auto Fragment : Fragments)
 	{
-		Fragment->SetSimulatePhysics(true);
-		Fragment->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		Fragment->SetCollisionProfileName(TEXT("PhysicsActor"));
+		if (Fragment)
+		{
+			Fragment->SetSimulatePhysics(true);
+			Fragment->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			Fragment->SetCollisionProfileName(TEXT("PhysicsActor"));
+		}
 	}
 
 	// 3. 폭발력 발사
-	RadialForce->FireImpulse();
+	if (RadialForce)
+	{
+		RadialForce->FireImpulse();
+	}
 
 	FVector Origin = GetActorLocation();
 
 	// 데미지 줄 액터들 중복 방지를 위한 Set
 	TSet<AActor*> DamagedActors;
-
 	TArray<FOverlapResult> Results;
 	FCollisionShape Shape = FCollisionShape::MakeSphere(ExplosionRadius);
 	if (GetWorld()->OverlapMultiByChannel(Results, Origin, FQuat::Identity, ECC_WorldDynamic, Shape))
@@ -139,15 +147,18 @@ void AExplosiveBarrel::Explode()
 			{
 				DamagedActors.Add(HitActor);
 
-				if (UHealthComponent* HealthC = HitActor->FindComponentByClass<UHealthComponent>())
+				if (UHealthComponent* OtherHealthC = HitActor->FindComponentByClass<UHealthComponent>())
 				{
-					HealthC->UpdateHealth(-ExplosionDamage);
+					OtherHealthC->UpdateHealth(-ExplosionDamage);
 				}
 			}
 		}
 	}
-
-	// 4. 6초 후에 액터 삭제 예약
+	
+	// 4. 상호작용 컴포넌트 삭제, 체력바 숨김
+	if (InteractC) InteractC->DestroyComponent();
+	if (HealthFloatingC) HealthFloatingC->HideHealthBar();
+	// 5. 6초 후에 파편 삭제 예약
 	GetWorldTimerManager().SetTimer(
 		DestroyTimerHandle,
 		this,
@@ -160,4 +171,12 @@ void AExplosiveBarrel::Explode()
 void AExplosiveBarrel::OnDestroyTimerExpired()
 {
 	Destroy();
+}
+
+void AExplosiveBarrel::OnHealthChanged(int32 NewHealth, int32 MaxHealth)
+{
+	if (NewHealth <= 0 && !bHasExploded)
+	{
+		Explode();
+	}
 }

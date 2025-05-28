@@ -14,6 +14,16 @@
 // 기본 반경 값 설정
 float UInteractionComponent::InteractRange = 250.f;
 
+UInteractionComponent::UInteractionComponent()
+{
+	// 기본값 하드코딩 - 위젯 클래스 로드 (경로는 프로젝트에 맞게 조정)
+	static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/Game/UI/WBP_ActionHotkey"));
+	if (WidgetClassFinder.Succeeded())
+	{
+		InteractionWidgetClass = WidgetClassFinder.Class;
+	}
+}
+
 void UInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
