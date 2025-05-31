@@ -1,30 +1,87 @@
 ﻿// GameSettingsInstance.cpp
 
-
 #include "systems/GameSettingsInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "allies/MainCharacter.h"
-#include "systems/GEPSaveGame.h"  // SaveGame 클래스 헤더 포함
+#include "systems/GEPSaveGame.h"  // SaveGame 클래스
+
+void UGameSettingsInstance::Init()
+{
+	Super::Init();
+	// 게임 시작 시 설정 로드 및 적용
+	LoadVolumeSettings();
+	ApplyVolumes();
+}
 
 void UGameSettingsInstance::SetBGMVolume(float NewVolume)
 {
 	BGMVolume = FMath::Clamp(NewVolume, 0.0f, 1.5f);
+	ApplyVolumes();
 }
 
 void UGameSettingsInstance::SetSFXVolume(float NewVolume)
 {
 	SFXVolume = FMath::Clamp(NewVolume, 0.0f, 1.5f);
+	ApplyVolumes();
+}
+
+void UGameSettingsInstance::ApplyVolumes()
+{
+	// 사운드 클래스에 실시간 적용
+	if (BGMSoundClass)
+	{
+		BGMSoundClass->Properties.Volume = BGMVolume;
+	}
+
+	if (SFXSoundClass)
+	{
+		SFXSoundClass->Properties.Volume = SFXVolume;
+	}
+	SaveVolumeSettings();
+}
+
+void UGameSettingsInstance::SaveVolumeSettings()
+{
+	// 설정 전용 슬롯에 저장
+	UGEPSaveGame* SettingsSave = Cast<UGEPSaveGame>(
+		UGameplayStatics::CreateSaveGameObject(UGEPSaveGame::StaticClass()));
+
+	if (SettingsSave)
+	{
+		SettingsSave->SavedBGMVolume = BGMVolume;
+		SettingsSave->SavedSFXVolume = SFXVolume;
+
+		UGameplayStatics::SaveGameToSlot(SettingsSave, TEXT("SettingsSlot"), 0);
+	}
+}
+
+void UGameSettingsInstance::LoadVolumeSettings()
+{
+	// 설정 전용 슬롯에서 불러오기
+	if (UGameplayStatics::DoesSaveGameExist(TEXT("SettingsSlot"), 0))
+	{
+		UGEPSaveGame* Loaded = Cast<UGEPSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(TEXT("SettingsSlot"), 0));
+
+		if (Loaded)
+		{
+			BGMVolume = Loaded->SavedBGMVolume;
+			SFXVolume = Loaded->SavedSFXVolume;
+		}
+	}
 }
 
 void UGameSettingsInstance::SavePlayerData(AMainCharacter* Player)
 {
 	if (!Player) return;
 
+	// 플레이어 전용 슬롯에 저장
 	UGEPSaveGame* SaveGameInstance = Cast<UGEPSaveGame>(
 		UGameplayStatics::CreateSaveGameObject(UGEPSaveGame::StaticClass()));
+
 	if (SaveGameInstance)
 	{
-		//SaveGameInstance->PlayerData = Player->GetSaveData();
+		SaveGameInstance->PlayerData = Player->GetSaveData();
 		UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("PlayerSaveSlot"), 0);
 	}
 }
@@ -39,7 +96,7 @@ void UGameSettingsInstance::LoadPlayerData(AMainCharacter* Player)
 			UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSaveSlot"), 0));
 		if (Loaded)
 		{
-			//Player->LoadFromSaveData(Loaded->PlayerData);
+			Player->LoadFromSaveData(Loaded->PlayerData);
 		}
 	}
 }

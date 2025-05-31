@@ -108,8 +108,6 @@ void UStartMenu::OnContinueGameClicked()
 {
 	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
 	{
-		// 이어하기 할 경우 "게임 불러오기 상태" 전달
-		GameInstance->bIsContinue = true;
 		// 게임 시작
 		AMenuGameMode* MenuGameMode = Cast<AMenuGameMode>(UGameplayStatics::GetGameMode(this));
 		if (MenuGameMode) MenuGameMode->StartGame();
@@ -121,12 +119,10 @@ void UStartMenu::OnNewStartClicked()
 {
 	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
 	{
-		GameInstance->bIsContinue = false;
 		// 세이브 초기화
 		if (bHasSaveData) UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSaveSlot"), 0);
 		// 게임 시작
-		AMenuGameMode* MenuGameMode = Cast<AMenuGameMode>(UGameplayStatics::GetGameMode(this));
-		if (MenuGameMode) MenuGameMode->StartGame();
+		OnContinueGameClicked();
 	}
 }
 

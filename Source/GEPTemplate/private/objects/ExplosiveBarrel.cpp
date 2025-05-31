@@ -19,7 +19,7 @@ AExplosiveBarrel::AExplosiveBarrel()
 	BoxComp->SetBoxExtent(FVector(30.f, 30.f, 45.f));
 	BoxComp->SetRelativeLocation(FVector(0.f, 0.f, BoxComp->GetScaledBoxExtent().Z));
 	RootComponent = BoxComp;
-	
+
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetCollisionProfileName(TEXT("Object"));
 	Mesh->SetupAttachment(RootComponent);
@@ -31,7 +31,7 @@ AExplosiveBarrel::AExplosiveBarrel()
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	HealthC->MaxHealth = 50.0;
 	HealthFloatingC = CreateDefaultSubobject<UHealthFloatingComponent>(TEXT("HealthFloatingComponent"));
-	
+
 	// 폭발력 (이펙트용)
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
 	RadialForce->SetupAttachment(Mesh);
@@ -154,9 +154,9 @@ void AExplosiveBarrel::Explode()
 			}
 		}
 	}
-	
-	// 4. 상호작용 컴포넌트 삭제, 체력바 숨김
-	if (InteractC) InteractC->DestroyComponent();
+
+	// 4. 상호작용 비활성화, 체력바 숨김
+	if (InteractC) InteractC->SetPower(false);
 	if (HealthFloatingC) HealthFloatingC->HideHealthBar();
 	// 5. 6초 후에 파편 삭제 예약
 	GetWorldTimerManager().SetTimer(

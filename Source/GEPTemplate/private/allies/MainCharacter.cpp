@@ -18,9 +18,12 @@
 #include "Components/TextBlock.h"
 #include "components/InteractionComponent.h"
 #include "TimerManager.h"
+#include "Chaos/PBDJointConstraintData.h"
 
 #include "Kismet/KismetMathLibrary.h"
 
+#include "systems/GEPSaveGame.h"
+#include "systems/GameSettingsInstance.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -102,7 +105,7 @@ AMainCharacter::AMainCharacter()
 	if (RollMontage.Succeeded()) { CombatC->RollMontage = RollMontage.Object; }
 
 	FocusingC = CreateDefaultSubobject<UFocusingComponent>(TEXT("FocusingComponent"));
-	
+
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	StaminaC = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
@@ -153,6 +156,13 @@ void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// --- 세이브 불러오기 ---
+	UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance());
+	if (GameInstance)
+	{
+		GameInstance->LoadPlayerData(this);
+	}
+
 	InitializeMiniMap(); // 미니맵 생성 함수 호출
 	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
 	InitializeGameAlert(); // 유저 상태 생성 함수 호출
@@ -171,9 +181,26 @@ void AMainCharacter::BeginPlay()
 	CombatC->OnDamaged.AddDynamic(this, &AMainCharacter::HandleDamaged);
 	CombatC->OnParried.AddDynamic(this, &AMainCharacter::HandleParried);
 	CombatC->OnStaggered.AddDynamic(this, &AMainCharacter::HandleStaggered);
+}
 
-	// 0.2초 마다 주변 상호작용 물체 검색
-	GetWorldTimerManager().SetTimer(UpdateInteractionTimer, this, &AMainCharacter::UpdateCurrentInteractionComponent, 0.2f, true);
+// 플레이어 상태를 FPlayerSaveData 구조체에 담아서 반환/복원
+FPlayerSaveData AMainCharacter::GetSaveData() const
+{
+	FPlayerSaveData Data;
+	Data.Location = GetActorLocation();       // 위치 저장
+	Data.Rotation = GetActorRotation();       // 방향 저장
+	Data.CameraRotation = GetController()->GetControlRotation();
+
+	Data.Gold = CurrentGold;
+	return Data;
+}
+void AMainCharacter::LoadFromSaveData(const FPlayerSaveData& Data)
+{
+	SetActorLocation(Data.Location);          // 위치 복원
+	SetActorRotation(Data.Rotation);          // 방향 복원
+	GetController()->SetControlRotation(Data.CameraRotation);
+
+	CurrentGold = Data.Gold;
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -183,6 +210,9 @@ void AMainCharacter::Tick(float DeltaTime)
 	TickMovement(DeltaTime);
 	TickStamina(DeltaTime);
 	TickFocusControl(DeltaTime);
+	// 상호작용 처리
+	if (++FrameCounter % 4 == 0) UpdateInteractionFocus();
+	HandleInteractionHoldTick(DeltaTime);
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -198,7 +228,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// PlayerInputComponent->BindAction("SniperGun", IE_Pressed, this, &AMainCharacter::InputChangeSniperGun);
 	// PlayerInputComponent->BindAction("SniperAim", IE_Pressed, this, &AMainCharacter::InputSniperAim);
 	// PlayerInputComponent->BindAction("SniperAim", IE_Released, this, &AMainCharacter::InputSniperAim);
-	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMainCharacter::InputInteract);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMainCharacter::StartInteract);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMainCharacter::CancelInteract);
 
 	// 전투 컴포넌트 바인드
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
@@ -212,82 +243,151 @@ void AMainCharacter::Turn(const float Value)
 {
 	if (!bOverControl) AddControllerYawInput(Value);
 }
+
 void AMainCharacter::LookUp(const float Value)
 {
 	if (!bOverControl) AddControllerPitchInput(Value);
 }
+
 void AMainCharacter::MoveForward(const float Value)
 {
 	if (!bOverMove) InputDirection.X = Value;
 }
+
 void AMainCharacter::MoveRight(const float Value)
 {
 	if (!bOverMove) InputDirection.Y = Value;
 }
 
-void AMainCharacter::InputInteract()
+// 상호작용 - F키 누르기
+void AMainCharacter::StartInteract()
 {
-	if (CurrentInteractionComponent) CurrentInteractionComponent->TryInteract();
+	bIsInteracting = true;
+	InteractHoldTime = 0.f;
+	// UI, HighLight는 포커싱 부분에서 구현하므로 여기서는 Time 초기화만
+	if (CurrentInteractionComponent)
+	{
+		RequiredHoldTime = CurrentInteractionComponent->InteractionDuration;
+	}
 }
 
-void AMainCharacter::UpdateCurrentInteractionComponent()
+// 상호작용 - F키 떼기
+void AMainCharacter::CancelInteract()
 {
-	FVector Center = GetActorLocation();
-	float Radius = UInteractionComponent::InteractRange; // 탐지 범위 설정
+	bIsInteracting = false;
+	InteractHoldTime = 0.f;
+	// UI 끄기, Highlight 끄기, 상태 초기화
+	if (CurrentInteractionComponent)
+	{
+		CurrentInteractionComponent->SetProgress(0.f);
+		CurrentInteractionComponent->ShowUI(false);
+		CurrentInteractionComponent->ShowHighlight(false);
+		CurrentInteractionComponent = nullptr;
+	}
+}
 
-	// 자신은 제외하고 탐색
+// 상호작용 - 시간 누적 처리
+void AMainCharacter::HandleInteractionHoldTick(float DeltaTime)
+{
+	// 상호작용 중일 때는 현재 대상이 볌위 안에 있는지 확인 + 시간 누적
+	if (bIsInteracting)
+	{
+		if (!CurrentInteractionComponent || !CurrentInteractionComponent->IsInRange() || !CurrentInteractionComponent->IsPowerOn)
+		{
+			// Nullptr or 거리를 벗어남 or 꺼지면 상호작용 취소
+			CancelInteract();
+			// 계속 F키 누르는 중이므로 다시 누르게 해야함
+			UpdateInteractionFocus();
+			StartInteract();
+			return;
+		}
+		// 시간 누적
+		InteractHoldTime += DeltaTime;
+		CurrentInteractionComponent->SetProgress(InteractHoldTime / RequiredHoldTime);
+		// 상호작용 완료
+		if (InteractHoldTime >= RequiredHoldTime)
+		{
+			CurrentInteractionComponent->TriggerInteraction(); // 실제 상호작용 실행
+			CancelInteract(); // 상태 초기화
+			// 계속 F키 누르는 중이라면 주변 물체 이어서 상호작용
+			UpdateInteractionFocus();
+			StartInteract();
+		}
+	}
+}
+
+// 상호작용 - 물체 탐색
+void AMainCharacter::UpdateInteractionFocus()
+{
+	// 이미 상호작용 중이면 탐색 생략
+	if (bIsInteracting && CurrentInteractionComponent) return;
+
+	// 플레이어와 카메라 방향 정보
+	FVector PlayerLocation = GetActorLocation();
+	FVector CameraForward = CameraC->GetForwardVector();
+
+	// 자신은 탐색 대상에서 제외
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
-	
-	// 구형 영역 내 겹치는 액터 찾기
+
+	// 구형 영역 내 상호작용 가능한 액터 탐색
 	TArray<FOverlapResult> Overlaps;
 	bool bHit = GetWorld()->OverlapMultiByObjectType(
 		Overlaps,
-		Center,
+		PlayerLocation,
 		FQuat::Identity,
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic),
-		FCollisionShape::MakeSphere(Radius),
+		FCollisionShape::MakeSphere(MaxDistance),
 		Params
 	);
 
-	UInteractionComponent* Nearest = nullptr;
-	float MinDist = FLT_MAX;
-
+	UInteractionComponent* BestInteraction = nullptr;
 	if (bHit)
 	{
-		for (auto& Result : Overlaps)
+		float BestDot = -1.f;
+		for (const FOverlapResult& Result : Overlaps)
 		{
 			if (AActor* OverlappedActor = Result.GetActor())
 			{
 				UInteractionComponent* Interaction = OverlappedActor->FindComponentByClass<UInteractionComponent>();
-				if (Interaction)
+				if (!Interaction) continue;
+				if (!Interaction->IsPowerOn) continue;
+				FVector TargetLocation = OverlappedActor->GetActorLocation();
+				// 상호작용 거리 초과 시 무시
+				//float Distance = FVector::Dist(PlayerLocation, TargetLocation);
+				//if (Distance > MaxDistance) continue;
+				if (!Interaction->IsInRange()) continue;
+				// 카메라가 바라보는 방향과 대상 간 방향 비교
+				FVector ToTarget = (TargetLocation - PlayerLocation).GetSafeNormal();
+				float Dot = FVector::DotProduct(CameraForward, ToTarget);
+
+				if (Dot > BestDot)
 				{
-					float Dist = Interaction->GetDistanceToPlayer();
-					if (Dist < MinDist)
-					{
-						MinDist = Dist;
-						Nearest = Interaction;
-					}
+					BestDot = Dot;
+					BestInteraction = Interaction;
 				}
 			}
 		}
 	}
 
-	// 이전 상호작용 물체 UI/Highlight 끄기
-	if (CurrentInteractionComponent && CurrentInteractionComponent != Nearest)
+	// 기존 대상과 다르면 이전 UI/Highlight 끄기
+	if (CurrentInteractionComponent && CurrentInteractionComponent != BestInteraction)
 	{
 		CurrentInteractionComponent->ShowUI(false);
 		CurrentInteractionComponent->ShowHighlight(false);
 	}
 
-	// 새로운 물체 UI/Highlight 켜기
-	if (Nearest && Nearest != CurrentInteractionComponent)
+	// 새로운 대상이 있으면 UI/Highlight 켜기
+	if (BestInteraction && BestInteraction != CurrentInteractionComponent)
 	{
-		Nearest->ShowUI(true);
-		Nearest->ShowHighlight(true);
+		BestInteraction->ShowUI(true);
+		BestInteraction->ShowHighlight(true);
 	}
-	
-	CurrentInteractionComponent = Nearest;
+
+	CurrentInteractionComponent = BestInteraction;
+
+	// F키 누른 상태에서 대상이 새로 잡히면 바로 상호작용
+	if (bIsInteracting && CurrentInteractionComponent) StartInteract();
 }
 
 void AMainCharacter::InputJump()
@@ -379,7 +479,7 @@ void AMainCharacter::Roll()
 		bUseControllerRotationYaw = false;
 		SetOverMoveParams(InputVector, 300.0f);
 	}
-	
+
 	CombatC->SetCombatState(ECombatState::Rolling);
 	// 구르기 몽타주 설정
 	PlayAnimMontage(CombatC->RollMontage);
@@ -399,7 +499,9 @@ void AMainCharacter::TickMovement(float DeltaTime)
 		SetActorLocation(GetActorLocation() + OverMoveDirection * OverMoveScale * DeltaTime);
 		AddMovementInput(OverMoveDirection, OverMoveScale * DeltaTime);
 	}
-	else if (bIgnoreMove) {}
+	else if (bIgnoreMove)
+	{
+	}
 	else
 	{
 		InputDirection = InputDirection.GetRotated(GetControlRotation().Yaw);

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "components/FocusedComponent.h"
 #include "GameFramework/Character.h"
+#include "systems/GEPSaveGame.h"
 #include "MainCharacter.generated.h"
 
 class UInteractionComponent;
@@ -55,7 +56,8 @@ public:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void InputJump();
-	void InputInteract();
+	void StartInteract();
+	void CancelInteract();
 	void SetOverrideMovement(bool value);
 	void SetOverrideMovement(FVector NewDirection);
 	// void InputFire();
@@ -81,6 +83,10 @@ public:
 	
 	// UI 표시
 	void ShowDeathUI();
+
+	// 저장 불러오기
+	FPlayerSaveData GetSaveData() const;
+	void LoadFromSaveData(const FPlayerSaveData& Data);
 	
 private:
 	// 델리게이트 핸들러
@@ -90,9 +96,14 @@ private:
 	UFUNCTION() void HandleStaggered();
 
 	// 상호작용 물체 처리
-	UInteractionComponent* CurrentInteractionComponent = nullptr;
-	void UpdateCurrentInteractionComponent();
-	FTimerHandle UpdateInteractionTimer;
+	void HandleInteractionHoldTick(float DeltaTime);
+	void UpdateInteractionFocus();
+	UPROPERTY() UInteractionComponent* CurrentInteractionComponent = nullptr;
+	float MaxDistance = 350.f; // 탐지 최대 거리
+	int FrameCounter = 0;
+	bool bIsInteracting = false;
+	float InteractHoldTime = 0.f;
+	float RequiredHoldTime = 0.f;
 	
 	// 로직
 	FVector2D InputDirection = FVector2D::ZeroVector;
