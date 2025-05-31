@@ -4,6 +4,8 @@
 #include "components/InteractionComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/Engine.h"
+#include "allies/MainCharacter.h"
+#include "components/StaminaComponent.h"
 
 AWaterDispenser::AWaterDispenser()
 {
@@ -24,6 +26,16 @@ void AWaterDispenser::BeginPlay()
 
 void AWaterDispenser::Interact(AActor* Caller)
 {
+	// UE_LOG(LogTemp, Log, TEXT("%s interacted with %s!"), *Caller->GetName(), *GetName());
 	if (!Caller) return;
-	UE_LOG(LogTemp, Log, TEXT("%s interacted with %s!"), *Caller->GetName(), *GetName());
+	
+	AMainCharacter* Player = Cast<AMainCharacter>(Caller);
+	if (!Player) return;
+	Player->ManageGold(1);
+	
+	UStaminaComponent* StaminaComp = Player->FindComponentByClass<UStaminaComponent>();
+	if (!StaminaComp) return;
+	StaminaComp->UpdateStamina(50);
+
+	InteractC->SetPower(false);
 }

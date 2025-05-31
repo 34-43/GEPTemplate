@@ -4,15 +4,14 @@
 #include "GameFramework/Actor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/Image.h"
 #include "Blueprint/UserWidget.h"
 #include "components/OutlineEffectLibrary.h"
 
 // 상호작용 액터
 #include "objects/WaterDispenser.h"
 #include "objects/ExplosiveBarrel.h"
-
-// 기본 반경 값 설정
-float UInteractionComponent::InteractRange = 250.f;
+#include "objects/SavePoint.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -39,6 +38,20 @@ void UInteractionComponent::BeginPlay()
 
 	InteractionWidgetInstance->AddToViewport();
 	InteractionWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+
+	// 프로그레스 이미지 캐스팅
+	UImage* FoundProgressImage = Cast<UImage>(InteractionWidgetInstance->GetWidgetFromName(TEXT("ProgressImage")));
+	if (FoundProgressImage)
+	{
+		UMaterialInterface* BaseMaterial = Cast<UMaterialInterface>(FoundProgressImage->Brush.GetResourceObject());
+		if (BaseMaterial)
+		{
+			ProgressMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+			FoundProgressImage->SetBrushFromMaterial(ProgressMaterial);
+			ProgressImage = FoundProgressImage;
+		}
+	}
+	SetProgress(0.f);
 }
 
 void UInteractionComponent::ShowHighlight(bool bShow)
@@ -52,8 +65,15 @@ void UInteractionComponent::ShowUI(bool bShow)
 	InteractionWidgetInstance->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 }
 
+void UInteractionComponent::SetProgress(float Value)
+{
+	if (ProgressMaterial)
+	{
+		ProgressMaterial->SetScalarParameterValue(TEXT("Percent"), Value);
+	}
+}
 
-void UInteractionComponent::TryInteract()
+void UInteractionComponent::TriggerInteraction()
 {
 	if (!OwnerActor || !PlayerRef) return;
 	// 액터를 추가하세요
@@ -67,9 +87,14 @@ void UInteractionComponent::TryInteract()
 		AActor* Player = PlayerRef;
 		ExplosiveBarrel->Interact(Player);
 	}
+	else if (auto SavePoint = Cast<ASavePoint>(OwnerActor))
+	{
+		AActor* Player = PlayerRef;
+		SavePoint->Interact(Player);
+	}
 	else
 	{
-		// 미래에 대비한 fallback
+		// fallback
 		UE_LOG(LogTemp, Warning, TEXT("Unknown interactable actor: %s"), *OwnerActor->GetName());
 	}
 }

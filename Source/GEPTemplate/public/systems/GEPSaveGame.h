@@ -14,9 +14,10 @@ USTRUCT(BlueprintType) struct FPlayerSaveData
 {
 	GENERATED_BODY()
 
-	UPROPERTY()	FVector Position;
-	UPROPERTY()	float HP;
-	UPROPERTY()	float Stamina;
+	UPROPERTY()	FVector Location;
+	UPROPERTY()	FRotator Rotation;
+	UPROPERTY()	FRotator CameraRotation;
+
 	UPROPERTY() int32 Gold;
 };
 
@@ -26,6 +27,9 @@ class GEPTEMPLATE_API UGEPSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	UPROPERTY()
-	FPlayerSaveData PlayerData;
+	// 게임 진행용
+	UPROPERTY()	FPlayerSaveData PlayerData;
+	// 설정용
+	UPROPERTY()	float SavedBGMVolume = 1.0f;
+	UPROPERTY()	float SavedSFXVolume = 1.0f;
 };
