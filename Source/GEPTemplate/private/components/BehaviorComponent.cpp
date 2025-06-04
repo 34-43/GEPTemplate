@@ -22,10 +22,7 @@ void UBehaviorComponent::BeginPlay()
 	Target = Cast<AMainCharacter>(actor);
 	Me = Cast<ABaseEnemy>(GetOwner());
 
-	if (Me)
-	{
-		MyCombatC = Me->FindComponentByClass<UCombatComponent>();
-	}
+	// GetCharacterMovement()->bOrientRotationToMovement = true; //메시를 이동방향으로 계속 갱신하는 기능 사용
 }
 
 
@@ -45,20 +42,18 @@ void UBehaviorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	TimeSinceLastAction += DeltaTime;
 
 	if (!Me || !Target) return;
-	
+
 	switch (mState)
 	{
-	case EEnemyState::Idle:
-		TickIdle();
+	case EEnemyState::Idle: TickIdle();
 		break;
-	case EEnemyState::Move:
-		TickMove();
+	case EEnemyState::Move: TickMove();
 		break;
-	case EEnemyState::Battle:
-		TickBattle();
+	case EEnemyState::Battle: TickBattle();
 		break;
-	case EEnemyState::Flee:
-		TickFlee();
+	case EEnemyState::Flee: TickFlee();
+		break;
+	case EEnemyState::Wander: TickWander();
 		break;
 	}
 }
@@ -100,7 +95,11 @@ bool UBehaviorComponent::IsLowHealth()
 
 		if (hpRatio <= FleeRate)
 		{
-			return true;
+			// 0.1% 확률로만 도망가게 설정
+			if (FMath::FRand() <= 0.001) // 0.0 ~ 1.0 사이 float 난수
+			{
+				return true;
+			}
 		}
 	}
 	return false;
@@ -113,7 +112,13 @@ void UBehaviorComponent::TickMove()
 
 	if (distance <= StartDistance && distance >= StopDistance)
 	{
-		Me->AddMovementInput(dir.GetSafeNormal());
+		float normalized = distance / StartDistance; // 0~1 범위로 정규화
+		float alpha = 3.0f; // 민감도 계수 (실험 필요)
+		float speedScale = 1.0f - FMath::Exp(-alpha * normalized); // 지수형 비례 속도
+
+		speedScale = FMath::Clamp(speedScale, 0.1f, 1.0f); // 너무 작거나 클 경우 방지
+
+		Me->AddMovementInput(dir.GetSafeNormal(), speedScale);
 	}
 
 	if (distance <= StopDistance)
@@ -122,82 +127,12 @@ void UBehaviorComponent::TickMove()
 	}
 }
 
-void UBehaviorComponent::TickBattle()
-{
-	// 기본적으로 방어, 간헐적으로 공격 시도, 플레이어 공격 감지 시 패링 시도
-	if (IsLowHealth())
-	{
-		SetState(EEnemyState::Flee);
-	}
-	else
-	{
-		float distance = GetDistanceFromTarget();
-
-		if (distance >= StopDistance)
-		{
-			SetState(EEnemyState::Idle);
-		}
-		else
-		{
-			if (MyCombatC)
-			{
-				if (TimeSinceLastAction >= ActionCooldown)
-				{
-					int32 totalRate = AttackRate + BlockRate + ParryRate;
-					int32 rand = FMath::RandRange(1, totalRate); // 1부터 총합 사이에서 랜덤값
-
-					if (rand <= AttackRate)
-					{
-						// 공격 횟수 결정 (1~4)
-						MaxComboCount = FMath::RandRange(1, 4);
-						CurrentComboIndex = 0;
-
-						// 첫 공격 시작
-						PerformComboAttack();
-					}
-					else if (rand <= AttackRate + BlockRate)
-					{
-						UE_LOG(LogTemp, Warning, TEXT("Block Attack"));
-						// CombatC->Block();
-					}
-					else
-					{
-						MyCombatC->Parry();
-					}
-
-					TimeSinceLastAction = 0;
-				}
-			}
-		}
-	}
-}
-
-void UBehaviorComponent::PerformComboAttack()
-{
-	if (!MyCombatC) return;
-
-	if (CurrentComboIndex < MaxComboCount)
-	{
-		MyCombatC->Attack(); // 한 번 공격
-		CurrentComboIndex++;
-
-		// 다음 공격 예약 (0.4초 간격 등으로 조절 가능)
-		GetWorld()->GetTimerManager().SetTimer(
-			ComboAttackTimerHandle,
-			this,
-			&UBehaviorComponent::PerformComboAttack,
-			0.4f, // 공격 간격
-			false
-		);
-	}
-}
-
+void UBehaviorComponent::TickBattle(){}
 
 void UBehaviorComponent::TickFlee()
 {
 	FVector fleeDir = Me->GetActorLocation() - Target->GetActorLocation();
 	float distance = fleeDir.Size();
-
 	// 도망 성공 (충분히 멀어짐)
 	if (distance >= SafeDistance)
 	{
@@ -221,5 +156,49 @@ void UBehaviorComponent::TickFlee()
 		FleeMoveCooldown = 0.0f;
 	}
 
-	Me->AddMovementInput(CurrentFleeDirection);
+	float fleeSpeedScale = 0.3f; // 0.0 ~ 1.0 사이 (값이 낮을수록 느림)
+	Me->AddMovementInput(CurrentFleeDirection, fleeSpeedScale);
+}
+
+void UBehaviorComponent::TickWander()
+{
+	if (!Me || !Target) return;
+
+	float distance = GetDistanceFromTarget();
+	if (distance > StopDistance)
+	{
+		SetState(EEnemyState::Move);
+		return;
+	}
+
+	WanderElapsedTime += GetWorld()->DeltaTimeSeconds;
+
+	// 배회 시간 끝났으면 전투로 복귀
+	if (WanderElapsedTime >= MaxWanderDuration)
+	{
+		SetState(EEnemyState::Battle);
+		return;
+	}
+
+	// 각도 증가
+	WanderAngle += WanderDirectionSign * WanderSpeed * GetWorld()->DeltaTimeSeconds;
+	if (WanderAngle >= 360.0f) WanderAngle -= 360.0f;
+	if (WanderAngle < 0.0f) WanderAngle += 360.0f;
+
+	// 이동 방향 계산
+	FVector center = Target->GetActorLocation();
+	float angleRad = FMath::DegreesToRadians(WanderAngle);
+	FVector offset = FVector(FMath::Cos(angleRad), FMath::Sin(angleRad), 0) * WanderRadius;
+	FVector newLocation = center + offset;
+
+	FVector toCenter = (Target->GetActorLocation() - Me->GetActorLocation()).GetSafeNormal(); // 플레이어 방향
+	FVector desiredDir = (newLocation - Me->GetActorLocation()).GetSafeNormal(); // 목표 위치 방향
+	FVector moveDir = desiredDir - FVector::DotProduct(desiredDir, toCenter) * toCenter;
+	moveDir = moveDir.GetSafeNormal();
+
+	Me->AddMovementInput(moveDir, 0.1f); // ← 천천히 원형 이동
+
+	// 적이 항상 플레이어 쳐다보게 회전
+	FRotator lookRot = UKismetMathLibrary::FindLookAtRotation(Me->GetActorLocation(), center);
+	Me->SetActorRotation(lookRot);
 }

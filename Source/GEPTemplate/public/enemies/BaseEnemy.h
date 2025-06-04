@@ -21,8 +21,9 @@ public:
 	void TickRenderWidget(APlayerController* PC);
 
 	// 컴포넌트
-	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
-	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
+	// UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
+	// UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
+	// UPROPERTY(VisibleAnywhere) class UBehaviorComponent* BehaviorC;
 	UPROPERTY(VisibleAnywhere) class UWidgetComponent* FloatingWidgetC;
 	UPROPERTY(VisibleAnywhere) class UFocusedComponent* FocusedC;
 
@@ -38,16 +39,20 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "AI") float LateralDistance = 300.0f;
 	UPROPERTY(VisibleAnywhere, Category = "AI") float StaggerDuration = 2.0f;
 
-private:
 	// 델리게이트 핸들러
-	UFUNCTION() void HandleDeath();
-	UFUNCTION() void HandleDamaged();
-	UFUNCTION() void HandleParried();
-	UFUNCTION() void HandleStaggered();
-	
+	// UFUNCTION() void HandleDeath();
+	// UFUNCTION() void HandleDamaged();
+	// UFUNCTION() void HandleParried();
+	// UFUNCTION() void HandleStaggered();
+	// virtual void HandleDeath();
+	// virtual void HandleDamaged();
+	// virtual void HandleParried();
+	// virtual void HandleStaggered();
+	// virtual void RagDollImpulse();
+
+protected:
 	// 로직
 	FTimerHandle TimerHandle;
 	float AttackTimer = 0.0f;
 	UPROPERTY() APlayerController* MainPlayerController;
-	void RagDollImpulse();
 };

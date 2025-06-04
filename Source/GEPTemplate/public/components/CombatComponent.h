@@ -60,32 +60,28 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float StaggerOnParriedTime = 2.0f;
 
 	// 상호작용
-	void Attack();
-	void Parry();
-	void Damage(int32 Damage, const FVector& DamageDirection, UCombatComponent* Performer);
-	void ParrySuccess(UCombatComponent* Performer);
-	void PauseMovement();
-	void ResumeMovement();
-	void SetCombatState(ECombatState NewState);
-	void PerformAttackSweep();
+	virtual void Attack();
+	virtual void Parry();
+	virtual void Damage(int32 Damage, const FVector& DamageDirection, UCombatComponent* Performer);
+	virtual void ParrySuccess(UCombatComponent* Performer);
+	virtual void PauseMovement();
+	virtual void ResumeMovement();
+	virtual void SetCombatState(ECombatState NewState);
+	virtual void PerformAttackSweep();
 	FVector GetLastHitDirection() { return LastHitDirection; }
 
 	// 이벤트
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnDamagedSignature OnDamaged;
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnParriedSignature OnParried;
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnStaggeredSignature OnStaggered;
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnDamagedSignature OnDamaged;
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnParriedSignature OnParried;
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnStaggeredSignature OnStaggered;
 
+	
 	// 로직
 	FTimerHandle StateTimerHandle;
-
-private:
 	//로직
 	FVector LastHitDirection;
 
 	// 델리게이트
 	UFUNCTION()
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	virtual void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

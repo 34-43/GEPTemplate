@@ -18,8 +18,16 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	// virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	// Component
-	UPROPERTY(VisibleAnywhere) class UBehaviorComponent* BehaviorC;
+	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
+	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
+	UPROPERTY(VisibleAnywhere) class UWalkingBehaviorComponent* BehaviorC;
+	
+	UFUNCTION() void HandleDamaged();
+	UFUNCTION() void HandleParried();
+	UFUNCTION() void HandleStaggered();
+	UFUNCTION() void HandleDeath();
+
+	void RagDollImpulse();
 };

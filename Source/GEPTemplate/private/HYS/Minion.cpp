@@ -1,21 +1,21 @@
-﻿#include "enemies/WalkingEnemy.h"
+﻿#include "HYS/Minion.h"
 
-#include "components/CombatComponent.h"
-#include "components/BehaviorComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "components/CombatComponent.h"
 #include "components/FocusedComponent.h"
 #include "components/HealthComponent.h"
 #include "Components/WidgetComponent.h"
 #include "enemies/EnemyFloatingWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "HYS/WalkingBehaviorComponent.h"
+#include "HYS/MinionBehaviorComponent.h"
+#include "HYS/MinionCombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 
-AWalkingEnemy::AWalkingEnemy()
+AMinion::AMinion()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	GetCapsuleComponent()->SetCollisionProfileName("Enemy");
 	GetCharacterMovement()->bOrientRotationToMovement = true; // 메시를 이동방향으로 계속 갱신하는 기능 사용
 
@@ -28,37 +28,33 @@ AWalkingEnemy::AWalkingEnemy()
 	static ConstructorHelpers::FClassFinder<UUserWidget> FloatingWidgetBP(
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
-	
-	CombatC = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
-	
+
+	MinionCombatC = CreateDefaultSubobject<UMinionCombatComponent>(TEXT("MinionCombatComponent"));
+
 	// 체력 컴포넌트 설정
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
-	// 기본 메시 포인터 로드
-	USkeletalMeshComponent* MeshC = GetMesh();
-	// 메시 설정
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMesh(
-		TEXT("/Game/Features/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin"));
-	if (SkeletalMesh.Succeeded()) { MeshC->SetSkeletalMesh(SkeletalMesh.Object); }
+	MeshC = GetMesh();
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f)); // Z축 위치 -90
 	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f)); // Yaw -90도 회전
 
 	// 애니메이션 BP 설정
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
-		TEXT("/Game/Blueprints/ABP_MainCharacter.ABP_MainCharacter_C"));
+		TEXT("/Game/HYS/Minion/ABP_Minion.ABP_Minion_C"));
 	if (AnimBP.Succeeded()) { MeshC->SetAnimInstanceClass(AnimBP.Class); }
 
 	// 피집중 컴포넌트 설정
 	FocusedC = CreateDefaultSubobject<UFocusedComponent>(TEXT("FocusedComponent"));
 	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
-	// Set State Component
-	BehaviorC = CreateDefaultSubobject<UWalkingBehaviorComponent>(TEXT("BehaviorComponent"));
+	MinionBehaviorC = CreateDefaultSubobject<UMinionBehaviorComponent>(TEXT("MinionBehaviorComponent"));
 }
 
-void AWalkingEnemy::BeginPlay()
+void AMinion::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("HealthC is valid? %s"), HealthC ? TEXT("Yes") : TEXT("NO!"));
 
 	// UI 렌더링에 필요한 1P 컨트롤러 지정
 	MainPlayerController = UGameplayStatics::GetPlayerController(this, 0);
@@ -68,32 +64,25 @@ void AWalkingEnemy::BeginPlay()
 	{
 		HealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged);
 	}
-	HealthC->OnDeath.AddDynamic(this, &AWalkingEnemy::HandleDeath);
+	HealthC->OnDeath.AddDynamic(this, &AMinion::HandleDeath);
 
-	CombatC->OnDamaged.AddDynamic(this, &AWalkingEnemy::HandleDamaged);
-	CombatC->OnParried.AddDynamic(this, &AWalkingEnemy::HandleParried);
-	CombatC->OnStaggered.AddDynamic(this, &AWalkingEnemy::HandleStaggered);
+	MinionCombatC->MinionOnDamaged.AddDynamic(this, &AMinion::HandleDamaged);
+	MinionCombatC->MinionOnParried.AddDynamic(this, &AMinion::HandleParried);
+	MinionCombatC->MinionOnStaggered.AddDynamic(this, &AMinion::HandleStaggered);
 }
 
-void AWalkingEnemy::Tick(float DeltaTime)
+void AMinion::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
 
-// void AWalkingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-// {
-// 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-// }
-
-
-
-void AWalkingEnemy::HandleDamaged()
+void AMinion::HandleDamaged()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
 	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
 }
 
-void AWalkingEnemy::HandleParried()
+void AMinion::HandleParried()
 {
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
 	{
@@ -103,11 +92,11 @@ void AWalkingEnemy::HandleParried()
 	}, 0.23f, false);
 }
 
-void AWalkingEnemy::HandleStaggered()
+void AMinion::HandleStaggered()
 {
 }
 
-void AWalkingEnemy::HandleDeath()
+void AMinion::HandleDeath()
 {
 	// 틱 비활성화
 	SetActorTickEnabled(false);
@@ -133,10 +122,10 @@ void AWalkingEnemy::HandleDeath()
 	SetLifeSpan(5.0f);
 }
 
-void AWalkingEnemy::RagDollImpulse()
+void AMinion::RagDollImpulse()
 {
 	// 메시 가져오기
-	USkeletalMeshComponent* MeshC = GetMesh();
+	if (!MeshC) MeshC = GetMesh(); // 필요시 갱신
 
 	// 컨트롤러 해제
 	DetachFromControllerPendingDestroy();
@@ -145,14 +134,23 @@ void AWalkingEnemy::RagDollImpulse()
 	GetCharacterMovement()->DisableMovement();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// 피직스 설정
-	MeshC->SetSimulatePhysics(true);
-	MeshC->SetCollisionProfileName(TEXT("Ragdoll"));
-
-	// 날려보내기
-	FVector ImpulseVector = -CombatC->GetLastHitDirection();
-	GetWorld()->GetTimerManager().SetTimerForNextTick([this, ImpulseVector, MeshC]()
+	// 죽음 애니메이션 재생 시도
+	if (MinionCombatC && MeshC)
 	{
-		MeshC->AddImpulse(ImpulseVector, NAME_None, true);
-	});
+		if (UAnimInstance* AnimInst = MeshC->GetAnimInstance())
+		{
+			// 실행 중인 몽타주 종료
+			AnimInst->Montage_Stop(0.1f); // 0.1초 블렌딩으로 자연스럽게 끊기
+
+			// 50% 확률로 둘 중 하나의 죽음 애니메이션 실행
+			UAnimMontage* DeathMontage = FMath::RandBool()
+				                             ? MinionCombatC->MinionDeathA_M
+				                             : MinionCombatC->MinionDeathB_M;
+
+			if (DeathMontage)
+			{
+				AnimInst->Montage_Play(DeathMontage);
+			}
+		}
+	}
 }
