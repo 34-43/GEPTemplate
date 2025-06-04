@@ -13,6 +13,15 @@ public class GEPTemplate : ModuleRules
 		// 게임 알림 위젯을 위해 추가함
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
+		PublicDefinitions.AddRange(new string[]
+		{
+			"_WIN32_WINNT_WIN10_TH2",
+			"_WIN32_WINNT_WIN10_RS1",
+			"_WIN32_WINNT_WIN10_RS2",
+			"_WIN32_WINNT_WIN10_RS3",
+			"_WIN32_WINNT_WIN10_RS4",
+			"_WIN32_WINNT_WIN10_RS5"
+		});
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		

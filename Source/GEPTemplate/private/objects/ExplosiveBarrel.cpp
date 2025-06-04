@@ -29,14 +29,17 @@ AExplosiveBarrel::AExplosiveBarrel()
 
 	// 체력 컴포넌트 설정
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
-	HealthC->MaxHealth = 50.0;
+	HealthC->MaxHealth = 24.0;
+	DamageTicksRemaining = 7; // (0.5초 마다 총 6틱, 여유분 있음)
+	DamagePerTick = 4.f;
 	HealthFloatingC = CreateDefaultSubobject<UHealthFloatingComponent>(TEXT("HealthFloatingComponent"));
+	HealthFloatingC->HideHealthBar();
 
 	// 폭발력 (이펙트용)
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
 	RadialForce->SetupAttachment(Mesh);
 	RadialForce->Radius = 400.f;
-	RadialForce->ImpulseStrength = 2000.f;
+	RadialForce->ImpulseStrength = 1800.f;
 	RadialForce->bImpulseVelChange = true;
 	RadialForce->bAutoActivate = false;
 	RadialForce->bIgnoreOwningActor = true;
@@ -92,8 +95,18 @@ void AExplosiveBarrel::BeginPlay()
 
 void AExplosiveBarrel::Interact(AActor* Caller)
 {
-	if (!Caller) return;
-	Explode();
+	if (AlertSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), AlertSound, GetActorLocation());
+	InteractC->SetPower(false);
+	if (!Caller || bHasExploded) return;
+	// 체력 감소 타이머 시작
+	HealthFloatingC->ShowHealthBar();
+	GetWorldTimerManager().SetTimer(
+		DamageTimerHandle,
+		this,
+		&AExplosiveBarrel::TickDamage,
+		0.5f,
+		true // 반복 호출
+	);
 }
 
 void AExplosiveBarrel::Explode()
@@ -158,12 +171,12 @@ void AExplosiveBarrel::Explode()
 	// 4. 상호작용 비활성화, 체력바 숨김
 	if (InteractC) InteractC->SetPower(false);
 	if (HealthFloatingC) HealthFloatingC->HideHealthBar();
-	// 5. 6초 후에 파편 삭제 예약
+	// 5. 7초 후에 파편 삭제 예약
 	GetWorldTimerManager().SetTimer(
 		DestroyTimerHandle,
 		this,
 		&AExplosiveBarrel::OnDestroyTimerExpired,
-		6.0f,
+		7.0f,
 		false
 	);
 }
@@ -175,8 +188,32 @@ void AExplosiveBarrel::OnDestroyTimerExpired()
 
 void AExplosiveBarrel::OnHealthChanged(int32 NewHealth, int32 MaxHealth)
 {
+	HealthFloatingC->ShowHealthBar();
 	if (NewHealth <= 0 && !bHasExploded)
 	{
-		Explode();
+		HealthFloatingC->HideHealthBar();
+		// 랜덤 시간 후 폭발
+		float RandomDelay = FMath::FRandRange(0.05f, 0.3f);
+		GetWorldTimerManager().SetTimer(
+			ExplosionTimerHandle,
+			this,
+			&AExplosiveBarrel::Explode,
+			RandomDelay,
+			false
+		);
+	}
+}
+
+void AExplosiveBarrel::TickDamage()
+{
+	if (HealthC)
+	{
+		HealthC->UpdateHealth(-DamagePerTick);
+	}
+
+	DamageTicksRemaining--;
+	if (DamageTicksRemaining <= 0)
+	{
+		GetWorldTimerManager().ClearTimer(DamageTimerHandle);
 	}
 }

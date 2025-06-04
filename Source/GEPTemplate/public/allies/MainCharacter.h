@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <d2d1helper.h>
+
 #include "CoreMinimal.h"
 #include "components/FocusedComponent.h"
 #include "GameFramework/Character.h"
@@ -7,6 +9,7 @@
 #include "MainCharacter.generated.h"
 
 class UInteractionComponent;
+class UBgmPlayer;
 
 UCLASS()
 class GEPTEMPLATE_API AMainCharacter : public ACharacter
@@ -49,6 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<UUserWidget> MiniMapW;// 미니맵 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> PlayerHUD_W;// 유저 상태 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> GameAlertUI_W;// 개임 알림 위젯 변수
+	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> BGMPlayer_W;// BMG 재생 위젯 변수
 
 	// 델리게이트
 	void Turn(float Value);
@@ -79,7 +83,8 @@ public:
 	// 상태 변경
 	void ManageStamina(float Amount); // 스태미너 관리
 	void RecoverStamina(); // 스태미너 회복
-	void ManageGold(int32 Amount); // 골드 관리
+	bool ManageGold(int32 Amount); // 골드 관리
+	int32 GetGold() const { return CurrentGold; } // 골드 정보
 	
 	// UI 표시
 	void ShowDeathUI();
@@ -87,6 +92,11 @@ public:
 	// 저장 불러오기
 	FPlayerSaveData GetSaveData() const;
 	void LoadFromSaveData(const FPlayerSaveData& Data);
+
+	// 아이템 배열, 사용, 획득
+	TArray<int32> ItemCounts = {0, 0};
+	void AddItem(int32 ItemCode);
+	void UseItem(int32 ItemCode);
 	
 private:
 	// 델리게이트 핸들러
@@ -125,14 +135,30 @@ private:
 	void InitializeMiniMap();
 	void InitializePlayerHUD();
 	void InitializeGameAlert();
+	void InitializeBgmPlayer();
 	// UUserWidget* _sniperUI;
 	UUserWidget* MiniMapWidget;// 미니맵 변수
 	UUserWidget* PlayerHUDWidget;// 유저 상태 변수
 	UUserWidget* GameAlertUIWidget;// 게임 알림 변수
+	UBgmPlayer* BgmPlayerWidget;// BGM 플레이어 변수
 
 	// 스탯
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량
 	int32 CurrentGold = 0;
+
+	// 아이템 사용 누르기
+	// 눌린 아이템 번호 (0 = 없음, 1 = 아이템1, 2 = 아이템2)
+	int32 PressedItemIndex = 0;
+	// 누르기 시작한 시간 저장
+	float PressStartTime = 0.f;
+	const float HoldThreshold = 1.0f;
+	void OnItem1Pressed();
+	void OnItem2Pressed();
+	void OnItemReleased();
+	void UpdateItemUsage(float DeltaTime);
+	bool bItemInCooldown[2] = { false, false };
+	float ItemCooldownTime[2] = { 0.0f, 0.0f };
+	const float CooldownDuration = 2.0f;
 };
 
 inline void AMainCharacter::StartFocusControlWithTarget(UFocusedComponent* Target)

@@ -31,7 +31,7 @@ protected:
 	// 이펙트, 사운드 관련
 	UPROPERTY(EditDefaultsOnly, Category = Effects)	UParticleSystem* ExplosionEffect;
 	UPROPERTY(EditDefaultsOnly, Category = Effects)	USoundBase* ExplosionSound;
-
+	UPROPERTY(EditDefaultsOnly, Category = Effects)	USoundBase* AlertSound;
 	
 	// 폭발력 컴포넌트
 	UPROPERTY(VisibleAnywhere) class URadialForceComponent* RadialForce;
@@ -59,4 +59,11 @@ private:
 	UPROPERTY() APlayerController* MainPlayerController;
 	FTimerHandle DestroyTimerHandle;
 	void OnDestroyTimerExpired();
+
+	// 틱데미지 처리
+	void TickDamage();
+	FTimerHandle DamageTimerHandle;
+	FTimerHandle ExplosionTimerHandle;
+	int32 DamageTicksRemaining;
+	float DamagePerTick;
 };

@@ -23,8 +23,8 @@ void UHelpPopup::InitializePages()
 		}
 	}
 	TitlesToAdd = {
-		FText::FromString(TEXT("게임 방법 1")),
-		FText::FromString(TEXT("게임 방법 2")),
+		FText::FromString(TEXT("기본 조작법")),
+		FText::FromString(TEXT("공격하기")),
 	};
 	SetPages(PagesToAdd, TitlesToAdd);
 }

@@ -1,10 +1,10 @@
 ﻿// StartMenu.cpp
 
-
 #include "systems/StartMenu.h"
 #include "systems/StartMenuBT.h"
 #include "systems/MenuGameMode.h"
 #include "systems/GameSettingsInstance.h"
+#include "systems/ConfirmPopup.h"
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 #include "Blueprint/UserWidget.h"
@@ -15,7 +15,7 @@
 void UStartMenu::NativeConstruct()
 {
 	Super::NativeConstruct();
-
+	bIsFocusable = true;
 	// 게임 세이브 확인
 	bHasSaveData = UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSaveSlot"), 0);
 	// 설정값 로드
@@ -117,12 +117,17 @@ void UStartMenu::OnContinueGameClicked()
 // 시작하기, 새로하기
 void UStartMenu::OnNewStartClicked()
 {
-	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
+	// 세이브 데이터 없으면 바로 새 게임 시작
+	if (!bHasSaveData) OnConfirmedNewStart();
+	// 세이브 데이터 삭제 확인 팝업
+	if (!ConfirmPopupClass) return;
+	UConfirmPopup* Popup = CreateWidget<UConfirmPopup>(GetWorld(), ConfirmPopupClass);
+	if (Popup)
 	{
-		// 세이브 초기화
-		if (bHasSaveData) UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSaveSlot"), 0);
-		// 게임 시작
-		OnContinueGameClicked();
+		Popup->SetInfoText(FText::FromString(TEXT("- 주의 -\n데이터가 삭제됩니다 !")));
+		Popup->AddToViewport();
+		// 확인 버튼이 눌렸을 때 실행될 델리게이트 바인딩
+		Popup->OnConfirmed.AddDynamic(this, &UStartMenu::OnConfirmedNewStart);
 	}
 }
 
@@ -143,6 +148,31 @@ void UStartMenu::OnSettingClicked()
 }
 
 void UStartMenu::OnExitClicked()
+{
+	// 게임 종료 팝업
+	if (!ConfirmPopupClass) return;
+	UConfirmPopup* Popup = CreateWidget<UConfirmPopup>(GetWorld(), ConfirmPopupClass);
+	if (Popup)
+	{
+		Popup->SetInfoText(FText::FromString(TEXT("게임을 종료합니다")));
+		Popup->AddToViewport();
+		// 확인 버튼이 눌렸을 때 실행될 델리게이트 바인딩
+		Popup->OnConfirmed.AddDynamic(this, &UStartMenu::OnConfirmedExit);
+	}
+}
+
+void UStartMenu::OnConfirmedNewStart()
+{
+	if (UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance()))
+	{
+		// 세이브 초기화
+		if (bHasSaveData) UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSaveSlot"), 0);
+		// 게임 시작
+		OnContinueGameClicked();
+	}
+}
+
+void UStartMenu::OnConfirmedExit()
 {
 	// 게임 종료
 	UWorld* currentWorld = GetWorld();
