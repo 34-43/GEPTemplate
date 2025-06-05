@@ -28,6 +28,7 @@ public:
 
 	// --- 오버라이드 --- 이 컴포넌트를 수동으로 파괴할 때, 위젯도 함께 파괴되도록 오버라이드
 	virtual void DestroyComponent(bool bPromoteChildren = false) override;
+	virtual void BeginPlay() override;
 
 	// --- 이벤트 ---
 	UPROPERTY(BlueprintAssignable) FOnDestroyedSignature OnDestroyed;
@@ -40,21 +41,6 @@ public:
 	void SetRecentlyFocused(const bool Value) { bRecentlyFocused = Value; }
 	bool IsRecentlyFocused() const { return bRecentlyFocused; }
 
-	// --- 정적 로직 ---
-	static UFocusedComponent* CurrentFocusC;
-	static UFocusedComponent* GetCurrentFocusC() { return CurrentFocusC; }
-	static TArray<UFocusedComponent*> RecentlyFocusedCList;
-	static bool HasRecentlyFocused() { return RecentlyFocusedCList.Num() > 0; }
-	static void FlushRecentlyFocusedCList()
-	{
-		for (const auto RecentlyFocusedC : RecentlyFocusedCList)
-		{
-			if (RecentlyFocusedC && RecentlyFocusedC->FocusedWidgetC)
-			{
-				RecentlyFocusedC->SetFocus(false);
-				RecentlyFocusedC->SetRecentlyFocused(false);
-			}
-		}
-		RecentlyFocusedCList.Empty();
-	}
+private:
+	UPROPERTY() class UFocusingComponent* FCCache;
 };

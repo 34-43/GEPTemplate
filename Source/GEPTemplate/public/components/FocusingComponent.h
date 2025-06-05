@@ -27,12 +27,16 @@ public:
 	// --- 상호작용 (소유자에서 호출) ---
 	UFUNCTION(BlueprintCallable, Category = "Focusing") void ScanTargets();
 	UFUNCTION(BlueprintCallable, Category = "Focusing") void CycleTarget();
-	UFUNCTION(BlueprintCallable, Category = "Focusing") void ClearTargets();
 
+	// --- 싱글톤 멤버 ---
+	UPROPERTY() class UFocusedComponent* CurrentFocusC;
+	UPROPERTY() TArray<UFocusedComponent*> RecentlyFocusedCList;
+	
 private:
 	// --- 중요 데이터 ---
 	UPROPERTY() TArray<UFocusedComponent*> FocusedCList;	//스캔된 타겟 저장하는 배열
-
+	
 	// --- 단순 로직 ---
 	void SortTargetsByDistance();
+	void FlushRecentlyFocusedCList();
 };

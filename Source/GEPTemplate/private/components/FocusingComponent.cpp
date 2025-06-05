@@ -7,17 +7,21 @@
 UFocusingComponent::UFocusingComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	CurrentFocusC = nullptr;
 }
 
 
 void UFocusingComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	RecentlyFocusedCList.Empty();
 }
 
 void UFocusingComponent::ScanTargets()
 {
-	ClearTargets();
+	FocusedCList.Empty();
 
 	// ScanRange 만큼의 구체를 만들어 오버랩되는 타겟 수집
 	FVector OwnerLocation = GetOwner()->GetActorLocation();
@@ -37,7 +41,7 @@ void UFocusingComponent::ScanTargets()
 		AActor* Actor = Overlap.GetActor();
 		if (Actor && Actor != GetOwner())
 		{
-			if (auto FocusedC = Cast<UFocusedComponent>(Actor->GetComponentByClass(UFocusedComponent::StaticClass())))
+			if (UFocusedComponent* FocusedC = Cast<UFocusedComponent>(Actor->GetComponentByClass(UFocusedComponent::StaticClass())))
 			{
 				FocusedCList.Add(FocusedC);
 			}
@@ -54,11 +58,8 @@ void UFocusingComponent::CycleTarget()
 	// 스캔된 대상이 없으면,
 	if (FocusedCList.Num() == 0)
 	{
-		// 최근에 사용한 대상들도 없으면 그냥 종료한다.
-		if (!UFocusedComponent::HasRecentlyFocused()) return;
-		
-		// 있다면 그들의 집중점을 비활성화하고, 사용 이력을 제거한다.
-		UFocusedComponent::FlushRecentlyFocusedCList();
+		// 최근 사용 이력에 있는 원소들의 집중점을 비활성화하고, 사용 이력을 제거한다.
+		FlushRecentlyFocusedCList();
 
 		// 주체의 컨트롤러 회전을 기존 방식으로 복구한다.
 		if (auto MC = Cast<AMainCharacter>(GetOwner()))
@@ -79,15 +80,14 @@ void UFocusingComponent::CycleTarget()
 	if (FocusedCList.Num() > 0)
 	{
 		// 그 하나에게 있는 집중점을 활성화하고, 사용 이력을 남기며, 최근에 사용한 대상들의 집중점을 비활성화한다.
-		const auto NowFocusedC = FocusedCList.Pop();
+		UFocusedComponent* NowFocusedC = FocusedCList.Pop();
 		if (NowFocusedC && NowFocusedC->FocusedWidgetC)
 		{
 			NowFocusedC->SetFocus(true);
 
-			if (const auto MC = Cast<AMainCharacter>(GetOwner()))
+			if (AMainCharacter* MC = Cast<AMainCharacter>(GetOwner()))
 			{
 				MC->StartFocusControlWithTarget(NowFocusedC);
-				// MC->GetCharacterMovement()->bOrientRotationToMovement = false;
 			}
 		}
 	}
@@ -95,19 +95,14 @@ void UFocusingComponent::CycleTarget()
 	else
 	{
 		// 최근에 사용한 대상들의 집중점을 비활성화하고, 사용 이력을 제거한다.
-		UFocusedComponent::FlushRecentlyFocusedCList();
+		FlushRecentlyFocusedCList();
 		
 		// 주체의 컨트롤러 회전을 기존 방식으로 복구한다.
-		if (const auto MC = Cast<AMainCharacter>(GetOwner()))
+		if (AMainCharacter* MC = Cast<AMainCharacter>(GetOwner()))
 		{
 			MC->EndFocusControl();
 		}
 	}
-}
-
-void UFocusingComponent::ClearTargets()
-{
-	FocusedCList.Empty();
 }
 
 void UFocusingComponent::SortTargetsByDistance()
@@ -123,4 +118,22 @@ void UFocusingComponent::SortTargetsByDistance()
 		float DistB2OSq = FVector::DistSquared(B->GetOwner()->GetActorLocation(), OwnerLocation);
 		return DistA2OSq > DistB2OSq;
 	});
+}
+
+void UFocusingComponent::FlushRecentlyFocusedCList()
+{
+	{
+		if (RecentlyFocusedCList.Num() > 0)
+		{
+			for (UFocusedComponent* RecentlyFocusedC : RecentlyFocusedCList)
+			{
+				if (RecentlyFocusedC && RecentlyFocusedC->FocusedWidgetC)
+				{
+					RecentlyFocusedC->SetFocus(false);
+					RecentlyFocusedC->SetRecentlyFocused(false);
+				}
+			}
+			RecentlyFocusedCList.Empty();
+		}
+	}
 }
