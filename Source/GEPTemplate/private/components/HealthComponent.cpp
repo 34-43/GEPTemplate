@@ -16,6 +16,7 @@ void UHealthComponent::BeginPlay()
 
 void UHealthComponent::UpdateHealth(const int32 Delta)
 {
+	if (CurrentHealth == 0) return;
 	CurrentHealth = FMath::Clamp(CurrentHealth + Delta, 0, MaxHealth);
 
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);

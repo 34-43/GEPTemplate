@@ -1,9 +1,9 @@
 ﻿// MenuGameMode.cpp
 
-
 #include "systems/MenuGameMode.h"
 #include "systems/SettingsPopup.h"
 #include "systems/HelpPopup.h"
+#include "systems/GameSettingsInstance.h"
 #include "GEPTemplate.h"
 #include "GEPTemplateGameModeBase.h"
 #include "Blueprint/UserWidget.h"
@@ -21,23 +21,33 @@ AMenuGameMode::AMenuGameMode()
 void AMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// 로고 화면 띄우기
-	if (StartLogoUI)
+
+	UGameSettingsInstance* Settings = Cast<UGameSettingsInstance>(GetGameInstance());
+	if (!Settings) return;
+	if (Settings->bLogoNeedToShow)
 	{
-		UUserWidget* LogoWidget = CreateWidget<UUserWidget>(GetWorld(), StartLogoUI);
-		if (LogoWidget)
+		Settings->bLogoNeedToShow = false;
+		// 로고 화면 띄우기
+		if (StartLogoUI)
 		{
-			LogoWidget->AddToViewport();
-			// 입력 차단 (게임은 계속 재생됨)
-			APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-			if (PC)
+			UUserWidget* LogoWidget = CreateWidget<UUserWidget>(GetWorld(), StartLogoUI);
+			if (LogoWidget)
 			{
-				PC->SetInputMode(FInputModeUIOnly());
-				PC->bShowMouseCursor = true;
+				LogoWidget->AddToViewport();
 			}
 		}
 	}
+	else { ShowMainMenu(); }
+
+	// 입력 처리
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (!PC) return;
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); // 마우스가 뷰포트 밖으로도 자유롭게 움직이도록 (원하면 변경 가능)
+	InputMode.SetHideCursorDuringCapture(false); // 클릭해도 마우스 커서 숨기지 않음
+	PC->SetInputMode(InputMode);
+	PC->bShowMouseCursor = true;
 }
 
 void AMenuGameMode::ShowMainMenu()
@@ -95,6 +105,7 @@ void AMenuGameMode::ShowHelp()
 		}
 	}
 }
+
 void AMenuGameMode::ShowSettings()
 {
 	UWorld* World = GetWorld();

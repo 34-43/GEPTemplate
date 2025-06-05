@@ -12,6 +12,7 @@
 #include "objects/WaterDispenser.h"
 #include "objects/ExplosiveBarrel.h"
 #include "objects/SavePoint.h"
+#include "objects/VendingMachine.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -69,28 +70,40 @@ void UInteractionComponent::SetProgress(float Value)
 {
 	if (ProgressMaterial)
 	{
+		// 0.01 이하일 경우 강제로 0 처리
+		if (FMath::IsNearlyZero(Value, 0.01f))
+		{
+			Value = 0.f;
+		}
 		ProgressMaterial->SetScalarParameterValue(TEXT("Percent"), Value);
 	}
 }
 
 void UInteractionComponent::TriggerInteraction()
 {
+	// PlayerRef 재조회
+	if (!PlayerRef)
+	{
+		PlayerRef = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	}
 	if (!OwnerActor || !PlayerRef) return;
+	AActor* Player = PlayerRef;
 	// 액터를 추가하세요
 	if (auto WaterDispenser = Cast<AWaterDispenser>(OwnerActor))
 	{
-		AActor* Player = PlayerRef;
 		WaterDispenser->Interact(Player);
 	}
 	else if (auto ExplosiveBarrel = Cast<AExplosiveBarrel>(OwnerActor))
 	{
-		AActor* Player = PlayerRef;
 		ExplosiveBarrel->Interact(Player);
 	}
 	else if (auto SavePoint = Cast<ASavePoint>(OwnerActor))
 	{
-		AActor* Player = PlayerRef;
 		SavePoint->Interact(Player);
+	}
+	else if (auto VendingMachine = Cast<AVendingMachine>(OwnerActor))
+	{
+		VendingMachine->Interact(Player);
 	}
 	else
 	{

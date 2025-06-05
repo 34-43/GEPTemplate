@@ -9,38 +9,39 @@ void UGameSettingsInstance::Init()
 {
 	Super::Init();
 	// 게임 시작 시 설정 로드 및 적용
-	LoadVolumeSettings();
-	ApplyVolumes();
+	LoadGameSettings();
+	bLogoNeedToShow = bLogoVisible;
+	ApplySettings();
 }
 
 void UGameSettingsInstance::SetBGMVolume(float NewVolume)
 {
 	BGMVolume = FMath::Clamp(NewVolume, 0.0f, 1.5f);
-	ApplyVolumes();
+	ApplySettings();
 }
 
 void UGameSettingsInstance::SetSFXVolume(float NewVolume)
 {
 	SFXVolume = FMath::Clamp(NewVolume, 0.0f, 1.5f);
-	ApplyVolumes();
+	ApplySettings();
 }
 
-void UGameSettingsInstance::ApplyVolumes()
+void UGameSettingsInstance::SetVOXVolume(float NewVolume)
+{
+	VOXVolume = FMath::Clamp(NewVolume, 0.0f, 1.5f);
+	ApplySettings();
+}
+
+void UGameSettingsInstance::ApplySettings()
 {
 	// 사운드 클래스에 실시간 적용
-	if (BGMSoundClass)
-	{
-		BGMSoundClass->Properties.Volume = BGMVolume;
-	}
-
-	if (SFXSoundClass)
-	{
-		SFXSoundClass->Properties.Volume = SFXVolume;
-	}
-	SaveVolumeSettings();
+	if (BGMSoundClass) BGMSoundClass->Properties.Volume = BGMVolume;
+	if (SFXSoundClass) SFXSoundClass->Properties.Volume = SFXVolume;
+	if (VOXSoundClass) VOXSoundClass->Properties.Volume = VOXVolume;
+	SaveGameSettings();
 }
 
-void UGameSettingsInstance::SaveVolumeSettings()
+void UGameSettingsInstance::SaveGameSettings()
 {
 	// 설정 전용 슬롯에 저장
 	UGEPSaveGame* SettingsSave = Cast<UGEPSaveGame>(
@@ -50,12 +51,13 @@ void UGameSettingsInstance::SaveVolumeSettings()
 	{
 		SettingsSave->SavedBGMVolume = BGMVolume;
 		SettingsSave->SavedSFXVolume = SFXVolume;
-
+		SettingsSave->SavedVOXVolume = VOXVolume;
+		SettingsSave->SavedLogoVisible = bLogoVisible;
 		UGameplayStatics::SaveGameToSlot(SettingsSave, TEXT("SettingsSlot"), 0);
 	}
 }
 
-void UGameSettingsInstance::LoadVolumeSettings()
+void UGameSettingsInstance::LoadGameSettings()
 {
 	// 설정 전용 슬롯에서 불러오기
 	if (UGameplayStatics::DoesSaveGameExist(TEXT("SettingsSlot"), 0))
@@ -67,6 +69,8 @@ void UGameSettingsInstance::LoadVolumeSettings()
 		{
 			BGMVolume = Loaded->SavedBGMVolume;
 			SFXVolume = Loaded->SavedSFXVolume;
+			VOXVolume = Loaded->SavedVOXVolume;
+			bLogoVisible = Loaded->SavedLogoVisible;
 		}
 	}
 }

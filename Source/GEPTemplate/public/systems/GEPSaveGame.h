@@ -19,6 +19,13 @@ USTRUCT(BlueprintType) struct FPlayerSaveData
 	UPROPERTY()	FRotator CameraRotation;
 
 	UPROPERTY() int32 Gold;
+	UPROPERTY() int32 BgmTrack;
+	// 아이템 수량 배열 저장
+	UPROPERTY()	TArray<int32> ItemCounts;
+	FPlayerSaveData()
+	{
+		ItemCounts.Init(0, 2); // 크기 2, 0으로 초기화
+	}
 };
 
 UCLASS()
@@ -32,4 +39,6 @@ public:
 	// 설정용
 	UPROPERTY()	float SavedBGMVolume = 1.0f;
 	UPROPERTY()	float SavedSFXVolume = 1.0f;
+	UPROPERTY()	float SavedVOXVolume = 1.0f;
+	UPROPERTY()	bool SavedLogoVisible = true;
 };

@@ -6,9 +6,9 @@
 #include "PopupFrame.h"
 #include "SettingsPopup.generated.h"
 
-/**
- * 
- */
+class UTextBlock;
+class USlider;
+
 UCLASS()
 class GEPTEMPLATE_API USettingsPopup : public UPopupFrame
 {

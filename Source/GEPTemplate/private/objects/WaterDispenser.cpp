@@ -6,6 +6,7 @@
 #include "Engine/Engine.h"
 #include "allies/MainCharacter.h"
 #include "components/StaminaComponent.h"
+#include "TimerManager.h"
 
 AWaterDispenser::AWaterDispenser()
 {
@@ -31,11 +32,22 @@ void AWaterDispenser::Interact(AActor* Caller)
 	
 	AMainCharacter* Player = Cast<AMainCharacter>(Caller);
 	if (!Player) return;
-	Player->ManageGold(1);
 	
 	UStaminaComponent* StaminaComp = Player->FindComponentByClass<UStaminaComponent>();
 	if (!StaminaComp) return;
 	StaminaComp->UpdateStamina(50);
 
 	InteractC->SetPower(false);
+	// 몇 초 후 다시 활성화
+	GetWorld()->GetTimerManager().SetTimer(
+		ReenableTimerHandle, this, &AWaterDispenser::ReenablePower, 2.0f, false
+	);
+}
+
+void AWaterDispenser::ReenablePower()
+{
+	if (InteractC)
+	{
+		InteractC->SetPower(true);
+	}
 }

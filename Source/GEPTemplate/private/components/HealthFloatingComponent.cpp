@@ -90,7 +90,7 @@ void UHealthFloatingComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	// 프레임 스킵
-	if (++FrameCounter % 3 == 0) UpdateWidget();
+	if (++FrameCounter % 4 == 0) UpdateWidget();
 }
 
 // 위젯 위치, 투명도, 방향 갱신

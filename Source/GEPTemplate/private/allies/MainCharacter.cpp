@@ -24,6 +24,7 @@
 
 #include "systems/GEPSaveGame.h"
 #include "systems/GameSettingsInstance.h"
+#include "systems/BgmPlayer.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -131,6 +132,8 @@ AMainCharacter::AMainCharacter()
 	if (PlayerHUD.Succeeded()) { PlayerHUD_W = PlayerHUD.Class; }
 	static ConstructorHelpers::FClassFinder<UUserWidget> GameAlert(TEXT("/Game/UI/WBP_GameAlertUI.WBP_GameAlertUI_C"));
 	if (GameAlert.Succeeded()) { GameAlertUI_W = GameAlert.Class; }
+	static ConstructorHelpers::FClassFinder<UUserWidget> BGMPlayer(TEXT("/Game/UI/WBP_BGMPlayer.WBP_BGMPlayer_C"));
+	if (BGMPlayer.Succeeded()) { BGMPlayer_W = BGMPlayer.Class; }
 
 	// 팩토리 설정
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
@@ -155,14 +158,15 @@ AMainCharacter::AMainCharacter()
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// --- 세이브 불러오기 ---
+	// 플레이어부터 생성한 뒤에 세이브 불러야 함
+	InitializeBgmPlayer(); // BGM 플레이어 생성
+	// ----- 세이브 불러오기 -----
 	UGameSettingsInstance* GameInstance = Cast<UGameSettingsInstance>(GetGameInstance());
 	if (GameInstance)
 	{
 		GameInstance->LoadPlayerData(this);
 	}
-
+	// 이후에 불러야 저장된 상태 반영 가능
 	InitializeMiniMap(); // 미니맵 생성 함수 호출
 	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
 	InitializeGameAlert(); // 유저 상태 생성 함수 호출
@@ -190,8 +194,9 @@ FPlayerSaveData AMainCharacter::GetSaveData() const
 	Data.Location = GetActorLocation();       // 위치 저장
 	Data.Rotation = GetActorRotation();       // 방향 저장
 	Data.CameraRotation = GetController()->GetControlRotation();
-
+	Data.BgmTrack = BgmPlayerWidget->GetTrack();
 	Data.Gold = CurrentGold;
+	Data.ItemCounts = ItemCounts;
 	return Data;
 }
 void AMainCharacter::LoadFromSaveData(const FPlayerSaveData& Data)
@@ -199,8 +204,9 @@ void AMainCharacter::LoadFromSaveData(const FPlayerSaveData& Data)
 	SetActorLocation(Data.Location);          // 위치 복원
 	SetActorRotation(Data.Rotation);          // 방향 복원
 	GetController()->SetControlRotation(Data.CameraRotation);
-
+	BgmPlayerWidget->SetTrack(Data.BgmTrack);
 	CurrentGold = Data.Gold;
+	ItemCounts = Data.ItemCounts;
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -213,6 +219,7 @@ void AMainCharacter::Tick(float DeltaTime)
 	// 상호작용 처리
 	if (++FrameCounter % 4 == 0) UpdateInteractionFocus();
 	HandleInteractionHoldTick(DeltaTime);
+	UpdateItemUsage(DeltaTime);
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -230,6 +237,10 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// PlayerInputComponent->BindAction("SniperAim", IE_Released, this, &AMainCharacter::InputSniperAim);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMainCharacter::StartInteract);
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMainCharacter::CancelInteract);
+	PlayerInputComponent->BindAction("Item1", IE_Pressed, this, &AMainCharacter::OnItem1Pressed);
+	PlayerInputComponent->BindAction("Item1", IE_Released, this, &AMainCharacter::OnItemReleased);
+	PlayerInputComponent->BindAction("Item2", IE_Pressed, this, &AMainCharacter::OnItem2Pressed);
+	PlayerInputComponent->BindAction("Item2", IE_Released, this, &AMainCharacter::OnItemReleased);
 
 	// 전투 컴포넌트 바인드
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
@@ -577,6 +588,8 @@ void AMainCharacter::InitializePlayerHUD()
 				PlayerHUD->HandleHealthChanged(HealthC->CurrentHealth, HealthC->MaxHealth);
 				PlayerHUD->HandleStaminaChanged(StaminaC->CurrentStamina, StaminaC->MaxStamina);
 				PlayerHUD->SetGold(CurrentGold);
+				PlayerHUD->SetItem1(ItemCounts[0]);
+				PlayerHUD->SetItem2(ItemCounts[1]);
 			}
 		}
 	}
@@ -595,15 +608,31 @@ void AMainCharacter::InitializeGameAlert()
 	}
 }
 
-void AMainCharacter::ManageGold(int32 Delta)
+void AMainCharacter::InitializeBgmPlayer()
 {
-	// 나중에 골드 음수 처리해야 할듯, 구매 못하게
-	CurrentGold = FMath::Max(0, CurrentGold + Delta);
+	if (BGMPlayer_W)
+	{
+		UBgmPlayer* Widget = CreateWidget<UBgmPlayer>(GetWorld(), BGMPlayer_W);
+		if (Widget)
+		{
+			Widget->AddToViewport();
+			BgmPlayerWidget = Widget;
+			//BgmPlayerWidget->SetVisibility(ESlateVisibility::Hidden); // 처음엔 숨김
+		}
+	}
+}
 
+bool AMainCharacter::ManageGold(int32 Delta)
+{
+	// 구매 실패
+	if (CurrentGold + Delta < 0){ return false; }
+	// 구매 성공
+	CurrentGold = CurrentGold + Delta;
 	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
 	{
 		PlayerHUD->SetGold(CurrentGold);
 	}
+	return true;
 }
 
 void AMainCharacter::ShowDeathUI()
@@ -639,4 +668,118 @@ void AMainCharacter::HandleParried()
 
 void AMainCharacter::HandleStaggered()
 {
+}
+
+// 아이템 획득
+void AMainCharacter::AddItem(int32 ItemCode)
+{
+	if (ItemCounts.IsValidIndex(ItemCode))
+	{
+		ItemCounts[ItemCode]++;
+		if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+		{
+			PlayerHUD->SetItem1(ItemCounts[0]);
+			PlayerHUD->SetItem2(ItemCounts[1]);
+		}
+		UE_LOG(LogTemp, Log, TEXT("Item : %d번 아이템 획득. 개수: %d"), ItemCode, ItemCounts[ItemCode]);
+	}
+}
+
+// 아이템 사용
+void AMainCharacter::UseItem(int32 ItemCode)
+{
+	if (ItemCounts.IsValidIndex(ItemCode) && ItemCounts[ItemCode] > 0)
+	{
+		ItemCounts[ItemCode]--;
+		if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+		{
+			PlayerHUD->SetItem1(ItemCounts[0]);
+			PlayerHUD->SetItem2(ItemCounts[1]);
+		}
+		UE_LOG(LogTemp, Log, TEXT("Item : %d번 아이템 사용. 남은 개수: %d"), ItemCode, ItemCounts[ItemCode]);
+		if (ItemCode == 0)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Item : 핫도그, 체력을 50 회복합니다."));
+			if (!HealthC) return;
+			HealthC->UpdateHealth(50);
+		}
+		else if (ItemCode == 1)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Item : 물, 스태미나를 50 회복합니다."));
+			if (!StaminaC) return;
+			StaminaC->UpdateStamina(50);
+		}
+	}
+}
+
+void AMainCharacter::OnItem1Pressed()
+{
+	OnItemReleased();
+	PressedItemIndex = 1;
+	PressStartTime = GetWorld()->GetTimeSeconds();
+}
+
+void AMainCharacter::OnItem2Pressed()
+{
+	OnItemReleased();
+	PressedItemIndex = 2;
+	PressStartTime = GetWorld()->GetTimeSeconds();
+}
+
+void AMainCharacter::OnItemReleased()
+{
+	PressedItemIndex = 0;
+}
+
+void AMainCharacter::UpdateItemUsage(float DeltaTime)
+{
+	UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget);
+	if (!PlayerHUD) return;
+
+	for (int32 Index = 0; Index < 2; ++Index)
+	{
+		float ProgressValue = 0.f;
+
+		// 아이템 수량이 없으면 HUD만 업데이트하고 스킵
+		if (ItemCounts[Index] <= 0)
+		{
+			PlayerHUD->UpdateItemHUD(Index, ItemCounts[Index], 0.f, true); // 비활성화 상태
+			continue;
+		}
+
+		// 1. 쿨다운 처리
+		if (bItemInCooldown[Index])
+		{
+			ItemCooldownTime[Index] -= DeltaTime;
+			ProgressValue = FMath::Clamp(ItemCooldownTime[Index] / CooldownDuration, 0.f, 1.f);
+
+			if (ItemCooldownTime[Index] <= 0.0f)
+			{
+				bItemInCooldown[Index] = false;
+				ItemCooldownTime[Index] = 0.f;
+			}
+		}
+		else if (PressedItemIndex == Index + 1) // 2. 누르고 있음
+		{
+			float Elapsed = GetWorld()->GetTimeSeconds() - PressStartTime;
+			ProgressValue = FMath::Clamp(Elapsed / HoldThreshold, 0.f, 1.f);
+
+			if (Elapsed >= HoldThreshold)
+			{
+				UseItem(Index);
+
+				bItemInCooldown[Index] = true;
+				ItemCooldownTime[Index] = CooldownDuration;
+
+				OnItemReleased();
+				ProgressValue = 1.0f;
+			}
+		}
+		else
+		{
+			ProgressValue = 0.f; // 3. 중간에 뗀 경우
+		}
+
+		PlayerHUD->UpdateItemHUD(Index, ItemCounts[Index], ProgressValue, bItemInCooldown[Index]);
+	}
 }

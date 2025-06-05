@@ -29,4 +29,8 @@ protected:
 public:
 	// 상호작용 함수 (InteractionComponent에서 호출)
 	void Interact(AActor* Caller);
+
+private:
+	FTimerHandle ReenableTimerHandle;
+	UFUNCTION()	void ReenablePower();
 };

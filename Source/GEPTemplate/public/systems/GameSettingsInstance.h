@@ -22,23 +22,32 @@ public:
 	// 볼륨 설정
 	void SetBGMVolume(float NewVolume);
 	void SetSFXVolume(float NewVolume);
-	// 볼륨 저장, 로드
-	void SaveVolumeSettings();
-	void LoadVolumeSettings();
+	void SetVOXVolume(float NewVolume);
+	
+	// 설정 저장, 로드
+	void SaveGameSettings();
+	void LoadGameSettings();
 	
 	// 플레이어 저장, 로드 함수
 	void SavePlayerData(AMainCharacter* Player);  // 플레이어 데이터 저장 (PlayerSlot)
 	void LoadPlayerData(AMainCharacter* Player);  // 플레이어 데이터 불러오기
 
 	// 현재 볼륨을 실제 적용
-	void ApplyVolumes();
+	void ApplySettings();
 
 	// 사운드 클래스 참조 (에디터에서 설정)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")	USoundClass* BGMSoundClass;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")	USoundClass* SFXSoundClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")	USoundClass* VOXSoundClass;
 
-private:
-	// 볼륨 설정 값 (초기화 될 예정)
+	// 볼륨 설정 값
 	UPROPERTY()	float BGMVolume = 1.0f;
 	UPROPERTY()	float SFXVolume = 1.0f;
+	UPROPERTY()	float VOXVolume = 1.0f;
+
+	// 로고 게임 당 한번만 띄우도록
+	UPROPERTY() bool bLogoNeedToShow = true;
+
+	// 로고 설정 값
+	UPROPERTY() bool bLogoVisible = true;
 };
