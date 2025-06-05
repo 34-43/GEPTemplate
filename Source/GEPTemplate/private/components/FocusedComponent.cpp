@@ -1,7 +1,9 @@
 ﻿#include "components/FocusedComponent.h"
 
+#include "allies/MainCharacter.h"
 #include "Components/WidgetComponent.h"
 #include "enemies/FocusedWidget.h"
+#include "components/FocusingComponent.h"
 
 
 UFocusedComponent::UFocusedComponent()
@@ -24,6 +26,16 @@ void UFocusedComponent::SetupWidgetAttachment(USceneComponent* InParent, FName I
 	FocusedWidgetC->SetupAttachment(InParent, InSocketName);
 }
 
+void UFocusedComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (auto MC = Cast<AMainCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn()))
+	{
+		FCCache = Cast<UFocusingComponent>(MC->GetComponentByClass(UFocusingComponent::StaticClass()));
+	}
+}
+
 void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 {
 	Super::DestroyComponent(bPromoteChildren);
@@ -34,10 +46,10 @@ void UFocusedComponent::DestroyComponent(bool bPromoteChildren)
 	FocusedWidgetC = nullptr;
 	
 	// 중요: 이 컴포넌트와 위젯이 nullptr이 될 때, 참조될 수 있는 위치도 cascade 삭제로 null-safe 처리
-	RecentlyFocusedCList.Remove(this);
-	if (CurrentFocusC == this)
+	FCCache->RecentlyFocusedCList.Remove(this);
+	if (FCCache->CurrentFocusC == this)
 	{
-		CurrentFocusC = nullptr;
+		FCCache->CurrentFocusC = nullptr;
 	}
 }
 
@@ -54,22 +66,18 @@ void UFocusedComponent::SetFocus(const bool Value)
 	if (!FocusedWidgetC || !IsValid(FocusedWidgetC)) return;
 	
 	// 직전 집중 대상을 비활성화
-	if (Value && CurrentFocusC && CurrentFocusC->FocusedWidgetC)
+	if (Value && FCCache->CurrentFocusC && FCCache->CurrentFocusC->FocusedWidgetC)
 	{
-		CurrentFocusC->FocusedWidgetC->SetVisibility(false);
+		FCCache->CurrentFocusC->FocusedWidgetC->SetVisibility(false);
 	}
 
 	// 집중점 활성화 및 사용 이력 추가
 	if (Value)
 	{
-		CurrentFocusC = this;
+		FCCache->CurrentFocusC = this;
 		SetRecentlyFocused(true);
-		RecentlyFocusedCList.Add(this);
+		FCCache->RecentlyFocusedCList.Add(this);
 	}
 	
 	FocusedWidgetC->SetVisibility(Value);
 }
-
-// --- 정적 멤버 정의 ---
-UFocusedComponent* UFocusedComponent::CurrentFocusC = nullptr;
-TArray<UFocusedComponent*> UFocusedComponent::RecentlyFocusedCList;

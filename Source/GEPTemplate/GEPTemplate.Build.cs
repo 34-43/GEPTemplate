@@ -8,7 +8,7 @@ public class GEPTemplate : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "AIModule", "NavigationSystem" });
 
 		// 게임 알림 위젯을 위해 추가함
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
