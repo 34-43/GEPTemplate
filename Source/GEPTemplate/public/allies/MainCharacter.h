@@ -10,6 +10,7 @@
 
 class UInteractionComponent;
 class UBgmPlayer;
+class UGameRestartUIWidget;
 
 UCLASS()
 class GEPTEMPLATE_API AMainCharacter : public ACharacter
@@ -53,6 +54,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> PlayerHUD_W;// 유저 상태 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> GameAlertUI_W;// 개임 알림 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> BGMPlayer_W;// BMG 재생 위젯 변수
+	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UGameRestartUIWidget> Restart_W;// 부활 버튼 위젯 변수
 
 	// 델리게이트
 	void Turn(float Value);
@@ -104,6 +106,8 @@ private:
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();
 	UFUNCTION() void HandleStaggered();
+	UFUNCTION() void HandleRestart();
+	UFUNCTION() void HandleGoStartMenu();
 
 	// 상호작용 물체 처리
 	void HandleInteractionHoldTick(float DeltaTime);
@@ -159,6 +163,10 @@ private:
 	bool bItemInCooldown[2] = { false, false };
 	float ItemCooldownTime[2] = { 0.0f, 0.0f };
 	const float CooldownDuration = 2.0f;
+	void ShowRestartPopup();
+
+	// 사망 함수
+	bool bIsDead = false;
 };
 
 inline void AMainCharacter::StartFocusControlWithTarget(UFocusedComponent* Target)
