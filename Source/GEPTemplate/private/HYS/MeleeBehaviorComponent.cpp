@@ -1,37 +1,36 @@
-﻿#include "HYS/MinionBehaviorComponent.h"
+﻿#include "HYS/MeleeBehaviorComponent.h"
 
 #include "allies/MainCharacter.h"
 #include "components/HealthComponent.h"
 #include "enemies/BaseEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "HYS/MinionCombatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
-UMinionBehaviorComponent::UMinionBehaviorComponent()
+UMeleeBehaviorComponent::UMeleeBehaviorComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
 
-void UMinionBehaviorComponent::BeginPlay()
+void UMeleeBehaviorComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	if (Me)
 	{
-		MyCombatC = Me->FindComponentByClass<UMinionCombatComponent>();
+		MyCombatC = Me->FindComponentByClass<UMeleeCombatComponent>();
 	}
 }
 
 
-void UMinionBehaviorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                             FActorComponentTickFunction* ThisTickFunction)
+void UMeleeBehaviorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                            FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UMinionBehaviorComponent::TickBattle()
+void UMeleeBehaviorComponent::TickBattle()
 {
 	float distance = GetDistanceFromTarget();
 
@@ -96,7 +95,7 @@ void UMinionBehaviorComponent::TickBattle()
 	}
 }
 
-void UMinionBehaviorComponent::PerformAttack()
+void UMeleeBehaviorComponent::PerformAttack()
 {
 	if (!MyCombatC || !Me) return;
 
@@ -105,7 +104,7 @@ void UMinionBehaviorComponent::PerformAttack()
 	{
 		return;
 	}
-	
+
 	// 이동 잠금
 	ACharacter* Char = Cast<ACharacter>(Me);
 	if (Char && Char->GetCharacterMovement())
@@ -116,18 +115,19 @@ void UMinionBehaviorComponent::PerformAttack()
 	// 공격 실행 (몽타주 or 애니메이션 시퀀스)
 	MyCombatC->Attack();
 
+	// todo: 이 부분 오류날 확률 높음
 	// 공격이 끝난 후 이동 다시 활성화 (애니메이션 시간 기준으로 타이머 설정)
-	const float AttackDuration = 2.0f;
+	const float AttackDuration = 4.0f;
 	GetWorld()->GetTimerManager().SetTimer(
 		AttackEndTimerHandle,
 		this,
-		&UMinionBehaviorComponent::OnAttackEnd,
+		&UMeleeBehaviorComponent::OnAttackEnd,
 		AttackDuration,
 		false
 	);
 }
 
-void UMinionBehaviorComponent::OnAttackEnd()
+void UMeleeBehaviorComponent::OnAttackEnd()
 {
 	ACharacter* Char = Cast<ACharacter>(Me);
 	if (Char && Char->GetCharacterMovement())

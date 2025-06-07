@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "enemies/BaseEnemy.h"
-#include "Minion.generated.h"
+#include "Melee.generated.h"
 
 UCLASS()
-class GEPTEMPLATE_API AMinion : public ABaseEnemy
+class GEPTEMPLATE_API AMelee : public ABaseEnemy
 {
 	GENERATED_BODY()
 
 public:
-	AMinion();
+	AMelee();
 
 protected:
 	virtual void BeginPlay() override;
@@ -21,9 +21,9 @@ public:
 	// Component
 	UPROPERTY(VisibleAnywhere) USkeletalMeshComponent* MeshC;
 
-	UPROPERTY(VisibleAnywhere) class UMinionCombatComponent* MinionCombatC;
-	UPROPERTY(VisibleAnywhere) class UHealthComponent* MinionHealthC;
-	UPROPERTY(VisibleAnywhere) class UMinionBehaviorComponent* MinionBehaviorC;
+	UPROPERTY(VisibleAnywhere) class UMeleeCombatComponent* MeleeCombatC;
+	UPROPERTY(VisibleAnywhere) class UHealthComponent* MeleeHealthC;
+	UPROPERTY(VisibleAnywhere) class UMeleeBehaviorComponent* MeleeBehaviorC;
 	
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();
@@ -33,6 +33,4 @@ public:
 	void RagDollImpulse();
 	
 	bool bIgnoreMove = false;
-	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }
-
-};
+	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }};

@@ -53,7 +53,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="Flee") float FleeCooldownTime = 1.0f;
 	UPROPERTY(EditAnywhere, Category="Flee") float FleeAngle = 60.0f;
 
-	UPROPERTY(EditAnywhere, Category="Battle") float ActionCooldown = 3.0f;
+	UPROPERTY(EditAnywhere, Category="Battle") float ActionCooldown = 1.5f;
 	UPROPERTY(EditAnywhere, Category="Battle") float AttackRate = 75.0f;
 	UPROPERTY(EditAnywhere, Category="Battle") float ParryRate = 25.0f;
 	UPROPERTY(EditAnywhere, Category="Battle") int CurrentComboIndex;
