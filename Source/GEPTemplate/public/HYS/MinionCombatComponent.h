@@ -24,6 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionAttackB_M; // Montage
 	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionAttackC_M; // Montage
 	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionParry_M; // Montage
+	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionParrySuccess_M; // Montage
 	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionDeathA_M; // Montage
 	UPROPERTY(VisibleAnywhere, Category = "Animation") UAnimMontage* MinionDeathB_M; // Montage
 

@@ -1,18 +1,17 @@
-﻿#include "HYS/Minion.h"
+﻿#include "HYS/Melee.h"
 
 #include "Components/CapsuleComponent.h"
-#include "components/CombatComponent.h"
 #include "components/FocusedComponent.h"
 #include "components/HealthComponent.h"
 #include "Components/WidgetComponent.h"
 #include "enemies/EnemyFloatingWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "HYS/MinionBehaviorComponent.h"
-#include "HYS/MinionCombatComponent.h"
+#include "HYS/MeleeBehaviorComponent.h"
+#include "HYS/MeleeCombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 
-AMinion::AMinion()
+AMelee::AMelee()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -29,10 +28,10 @@ AMinion::AMinion()
 		TEXT("/Game/UI/WBP_EnemyFloating.WBP_EnemyFloating_C"));
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 
-	MinionCombatC = CreateDefaultSubobject<UMinionCombatComponent>(TEXT("MinionCombatComponent"));
+	MeleeCombatC = CreateDefaultSubobject<UMeleeCombatComponent>(TEXT("MeleeCombatComponent"));
 
 	// 체력 컴포넌트 설정
-	MinionHealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	MeleeHealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	MeshC = GetMesh();
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f)); // Z축 위치 -90
@@ -40,21 +39,21 @@ AMinion::AMinion()
 
 	// 애니메이션 BP 설정
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
-		TEXT("/Game/HYS/Minion/ABP_Minion.ABP_Minion_C"));
+		TEXT("/Game/HYS/Melee/ABP_Melee.ABP_Melee_C"));
 	if (AnimBP.Succeeded()) { MeshC->SetAnimInstanceClass(AnimBP.Class); }
 
 	// 피집중 컴포넌트 설정
 	FocusedC = CreateDefaultSubobject<UFocusedComponent>(TEXT("FocusedComponent"));
 	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
-	MinionBehaviorC = CreateDefaultSubobject<UMinionBehaviorComponent>(TEXT("MinionBehaviorComponent"));
+	MeleeBehaviorC = CreateDefaultSubobject<UMeleeBehaviorComponent>(TEXT("MeleeBehaviorComponent"));
 }
 
-void AMinion::BeginPlay()
+void AMelee::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Warning, TEXT("HealthC is valid? %s"), MinionHealthC ? TEXT("Yes") : TEXT("NO!"));
+	UE_LOG(LogTemp, Warning, TEXT("HealthC is valid? %s"), MeleeHealthC ? TEXT("Yes") : TEXT("NO!"));
 
 	// UI 렌더링에 필요한 1P 컨트롤러 지정
 	MainPlayerController = UGameplayStatics::GetPlayerController(this, 0);
@@ -62,27 +61,27 @@ void AMinion::BeginPlay()
 	// 체력 컴포넌트의 두 델리게이트에 각각 1.체력 UI 업데이트 처리, 2. 사망 처리 핸들러 연결
 	if (const auto Widget = Cast<UEnemyFloatingWidget>(FloatingWidgetC->GetWidget()))
 	{
-		MinionHealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged);
+		MeleeHealthC->OnHealthChanged.AddDynamic(Widget, &UEnemyFloatingWidget::HandleHealthChanged);
 	}
-	MinionHealthC->OnDeath.AddDynamic(this, &AMinion::HandleDeath);
+	MeleeHealthC->OnDeath.AddDynamic(this, &AMelee::HandleDeath);
 
-	MinionCombatC->MinionOnDamaged.AddDynamic(this, &AMinion::HandleDamaged);
-	MinionCombatC->MinionOnParried.AddDynamic(this, &AMinion::HandleParried);
-	MinionCombatC->MinionOnStaggered.AddDynamic(this, &AMinion::HandleStaggered);
+	MeleeCombatC->MeleeOnDamaged.AddDynamic(this, &AMelee::HandleDamaged);
+	MeleeCombatC->MeleeOnParried.AddDynamic(this, &AMelee::HandleParried);
+	MeleeCombatC->MeleeOnStaggered.AddDynamic(this, &AMelee::HandleStaggered);
 }
 
-void AMinion::Tick(float DeltaTime)
+void AMelee::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
 
-void AMinion::HandleDamaged()
+void AMelee::HandleDamaged()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
 	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
 }
 
-void AMinion::HandleParried()
+void AMelee::HandleParried()
 {
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
 	{
@@ -92,11 +91,11 @@ void AMinion::HandleParried()
 	}, 0.23f, false);
 }
 
-void AMinion::HandleStaggered()
+void AMelee::HandleStaggered()
 {
 }
 
-void AMinion::HandleDeath()
+void AMelee::HandleDeath()
 {
 	// 틱 비활성화
 	SetActorTickEnabled(false);
@@ -122,7 +121,7 @@ void AMinion::HandleDeath()
 	SetLifeSpan(5.0f);
 }
 
-void AMinion::RagDollImpulse()
+void AMelee::RagDollImpulse()
 {
 	// 메시 가져오기
 	if (!MeshC) MeshC = GetMesh(); // 필요시 갱신
@@ -135,17 +134,14 @@ void AMinion::RagDollImpulse()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// 죽음 애니메이션 재생 시도
-	if (MinionCombatC && MeshC)
+	if (MeleeCombatC && MeshC)
 	{
 		if (UAnimInstance* AnimInst = MeshC->GetAnimInstance())
 		{
 			// 실행 중인 몽타주 종료
 			AnimInst->Montage_Stop(0.1f); // 0.1초 블렌딩으로 자연스럽게 끊기
-
-			// 50% 확률로 둘 중 하나의 죽음 애니메이션 실행
-			UAnimMontage* DeathMontage = FMath::RandBool()
-				                             ? MinionCombatC->MinionDeathA_M
-				                             : MinionCombatC->MinionDeathB_M;
+			// 죽음 애니메이션 실행
+			UAnimMontage* DeathMontage = MeleeCombatC->MeleeDeathA_M;
 
 			if (DeathMontage)
 			{

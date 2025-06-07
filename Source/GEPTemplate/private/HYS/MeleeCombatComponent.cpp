@@ -1,53 +1,47 @@
-﻿#include "HYS/MinionCombatComponent.h"
+﻿#include "HYS/MeleeCombatComponent.h"
 
 #include "GEPTemplate.h"
 #include "components/HealthComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "HYS/Minion.h"
+#include "HYS/Melee.h"
 
-
-class UHealthComponent;
-
-UMinionCombatComponent::UMinionCombatComponent()
+UMeleeCombatComponent::UMeleeCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	CombatState = ECombatState::IdleMoving;
 
 	// 공격 몽타주 설정
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionAttackA_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_AttackA_Montage.Minion_AttackA_Montage"));
-	if (MinionAttackA_M_Obj.Succeeded()) { MinionAttackA_M = MinionAttackA_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeAttackA_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_AttackA_Montage.Melee_AttackA_Montage"));
+	if (MeleeAttackA_M_Obj.Succeeded()) { MeleeAttackA_M = MeleeAttackA_M_Obj.Object; }
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionAttackB_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_AttackB_Montage.Minion_AttackB_Montage"));
-	if (MinionAttackB_M_Obj.Succeeded()) { MinionAttackB_M = MinionAttackB_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeAttackB_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_AttackB_Montage.Melee_AttackB_Montage"));
+	if (MeleeAttackB_M_Obj.Succeeded()) { MeleeAttackB_M = MeleeAttackB_M_Obj.Object; }
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionAttackC_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_AttackC_Montage.Minion_AttackC_Montage"));
-	if (MinionAttackC_M_Obj.Succeeded()) { MinionAttackC_M = MinionAttackC_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeAttackC_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_AttackC_Montage.Melee_AttackC_Montage"));
+	if (MeleeAttackC_M_Obj.Succeeded()) { MeleeAttackA_M = MeleeAttackC_M_Obj.Object; }
 
 	// 패링 몽타주 설정
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionParry_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_Parry_Montage.Minion_Parry_Montage"));
-	if (MinionParry_M_Obj.Succeeded()) { MinionParry_M = MinionParry_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeParry_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_Parry_Montage.Melee_Parry_Montage"));
+	if (MeleeParry_M_Obj.Succeeded()) { MeleeParry_M = MeleeParry_M_Obj.Object; }
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionParrySuccess_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_Parry_Success_Montage.Minion_Parry_Success_Montage"));
-	if (MinionParrySuccess_M_Obj.Succeeded()) { MinionParrySuccess_M = MinionParrySuccess_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeParrySuccess_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_Parry_Success_Montage.Melee_Parry_Success_Montage"));
+	if (MeleeParrySuccess_M_Obj.Succeeded()) { MeleeParrySuccess_M = MeleeParrySuccess_M_Obj.Object; }
 
 	// 죽음 몽타주 설정
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionDeathA_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_DeathA_Montage.Minion_DeathA_Montage"));
-	if (MinionDeathA_M_Obj.Succeeded()) { MinionDeathA_M = MinionDeathA_M_Obj.Object; }
-
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> MinionDeathB_M_Obj(
-		TEXT("/Game/HYS/Minion/Montage/Minion_DeathB_Montage.Minion_DeathB_Montage"));
-	if (MinionDeathB_M_Obj.Succeeded()) { MinionDeathB_M = MinionDeathB_M_Obj.Object; }
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeDeathA_M_Obj(
+		TEXT("/Game/HYS/Melee/Montage/Melee_DeathA_Montage.Melee_DeathA_Montage"));
+	if (MeleeDeathA_M_Obj.Succeeded()) { MeleeDeathA_M = MeleeDeathA_M_Obj.Object; }
 }
 
-void UMinionCombatComponent::BeginPlay()
+
+void UMeleeCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -60,7 +54,7 @@ void UMinionCombatComponent::BeginPlay()
 	}
 }
 
-void UMinionCombatComponent::Attack()
+void UMeleeCombatComponent::Attack()
 {
 	// AnimInst 레퍼런스 준비
 	UAnimInstance* AnimInst = nullptr;
@@ -82,21 +76,21 @@ void UMinionCombatComponent::Attack()
 			UE_LOG(LogTemp, Warning, TEXT("RandRate: %d"), RandRate); // todo: remove
 			if (RandRate == 0)
 			{
-				AnimInst->Montage_Play(MinionAttackA_M);
+				AnimInst->Montage_Play(MeleeAttackA_M);
 			}
 			else if (RandRate == 1)
 			{
-				AnimInst->Montage_Play(MinionAttackB_M);
+				AnimInst->Montage_Play(MeleeAttackB_M);
 			}
 			else
 			{
-				AnimInst->Montage_Play(MinionAttackC_M);
+				AnimInst->Montage_Play(MeleeAttackC_M);
 			}
 		}
 	}
 }
 
-void UMinionCombatComponent::Parry()
+void UMeleeCombatComponent::Parry()
 {
 	// AnimInst 레퍼런스 준비
 	UAnimInstance* AnimInst = nullptr;
@@ -111,10 +105,10 @@ void UMinionCombatComponent::Parry()
 	if (CombatState != ECombatState::IdleMoving) return;
 	SetCombatState(ECombatState::Parrying);
 	// 패링 몽타주 설정
-	if (AMinion* Minion = Cast<AMinion>(GetOwner())) { Minion->PlayAnimMontage(MinionParry_M, 1.1f); }
+	if (AMelee* Melee = Cast<AMelee>(GetOwner())) { Melee->PlayAnimMontage(MeleeParry_M, 1.1f); }
 }
 
-void UMinionCombatComponent::Damage(int32 Damage, const FVector& DamageDirection, UCombatComponent* Performer)
+void UMeleeCombatComponent::Damage(int32 Damage, const FVector& DamageDirection, UCombatComponent* Performer)
 {
 	LastHitDirection = DamageDirection.GetSafeNormal();
 
@@ -131,14 +125,14 @@ void UMinionCombatComponent::Damage(int32 Damage, const FVector& DamageDirection
 		return;
 	}
 
-	MinionOnDamaged.Broadcast();
+	MeleeOnDamaged.Broadcast();
 	if (UHealthComponent* HealthC = GetOwner()->FindComponentByClass<UHealthComponent>())
 	{
 		HealthC->UpdateHealth(-Damage);
 	}
 }
 
-void UMinionCombatComponent::ParrySuccess(UCombatComponent* Performer)
+void UMeleeCombatComponent::ParrySuccess(UCombatComponent* Performer)
 {
 	auto Me = Cast<ACharacter>(GetOwner());
 	auto You = Cast<ACharacter>(Performer->GetOwner());
@@ -150,9 +144,9 @@ void UMinionCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	auto Me2YouRot = (You->GetActorLocation() - Me->GetActorLocation()).Rotation();
 	auto You2MeRot = (Me->GetActorLocation() - You->GetActorLocation()).Rotation();
 
-	MinionOnParried.Broadcast();
+	MeleeOnParried.Broadcast();
 	AnimInst->Montage_Pause();
-	AnimInst->Montage_Play(MinionParrySuccess_M);
+	AnimInst->Montage_Play(MeleeParrySuccess_M);
 	Me->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Me->bUseControllerRotationYaw = true;
 	Me->FaceRotation(Me2YouRot);
@@ -170,29 +164,29 @@ void UMinionCombatComponent::ParrySuccess(UCombatComponent* Performer)
 	You->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
-void UMinionCombatComponent::PauseMovement()
+void UMeleeCombatComponent::PauseMovement()
 {
-	if (auto MC = Cast<AMinion>(GetOwner()))
+	if (auto MC = Cast<AMelee>(GetOwner()))
 	{
 		MC->SetIgnoreMove(true);
 	}
 }
 
-void UMinionCombatComponent::ResumeMovement()
+void UMeleeCombatComponent::ResumeMovement()
 {
-	if (auto MC = Cast<AMinion>(GetOwner()))
+	if (auto MC = Cast<AMelee>(GetOwner()))
 	{
 		MC->SetIgnoreMove(false);
 	}
 }
 
-void UMinionCombatComponent::SetCombatState(ECombatState NewState)
+void UMeleeCombatComponent::SetCombatState(ECombatState NewState)
 {
 	CombatState = NewState;
 	PRINT_LOG(TEXT("CombatState : %i"), CombatState)
 }
 
-void UMinionCombatComponent::PerformAttackSweep()
+void UMeleeCombatComponent::PerformAttackSweep()
 {
 	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
@@ -205,7 +199,7 @@ void UMinionCombatComponent::PerformAttackSweep()
 		FCollisionQueryParams Params(NAME_None, false, Char);
 		TArray<FHitResult> HitResults;
 		bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel3,
-		                                            Capsule, Params);
+													Capsule, Params);
 
 		for (auto& Hit : HitResults)
 		{
@@ -221,7 +215,7 @@ void UMinionCombatComponent::PerformAttackSweep()
 	}
 }
 
-void UMinionCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+void UMeleeCombatComponent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (bInterrupted) return;
 
