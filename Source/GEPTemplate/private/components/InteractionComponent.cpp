@@ -9,6 +9,8 @@
 #include "components/OutlineEffectLibrary.h"
 
 // 상호작용 액터
+#include "GEPTemplate.h"
+#include "objects/ElevatorButton.h"
 #include "objects/WaterDispenser.h"
 #include "objects/ExplosiveBarrel.h"
 #include "objects/SavePoint.h"
@@ -104,6 +106,10 @@ void UInteractionComponent::TriggerInteraction()
 	else if (auto VendingMachine = Cast<AVendingMachine>(OwnerActor))
 	{
 		VendingMachine->Interact(Player);
+	}
+	else if (auto ElevatorButton = Cast<AElevatorButton>(OwnerActor))
+	{
+		ElevatorButton->Interact(Player);
 	}
 	else
 	{
