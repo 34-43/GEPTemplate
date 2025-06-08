@@ -1,6 +1,7 @@
 ﻿#include "enemies/WalkingEnemy.h"
 
 #include "components/CombatComponent.h"
+#include "components/CoinGenerator.h"
 #include "components/BehaviorComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "components/FocusedComponent.h"
@@ -57,6 +58,10 @@ AWalkingEnemy::AWalkingEnemy()
 
 	// Set State Component
 	BehaviorC = CreateDefaultSubobject<UWalkingBehaviorComponent>(TEXT("BehaviorComponent"));
+	
+	// 코인 드랍 컴포넌트 설정
+	CoinC = CreateDefaultSubobject<UCoinGenerator>(TEXT("CoinGenerator"));
+	CoinC->SetupAttachment(MeshC);
 }
 
 void AWalkingEnemy::BeginPlay()
@@ -128,6 +133,7 @@ void AWalkingEnemy::HandleDeath()
 	}
 
 	// 아이템 드랍
+	CoinC->GenerateCoins(1);
 
 	// 래그돌 전환 및 넉
 	RagDollImpulse();

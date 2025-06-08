@@ -9,6 +9,7 @@
 #include "HYS/MeleeBehaviorComponent.h"
 #include "HYS/MeleeCombatComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "components/CoinGenerator.h"
 
 
 AMelee::AMelee()
@@ -47,6 +48,10 @@ AMelee::AMelee()
 	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
 	MeleeBehaviorC = CreateDefaultSubobject<UMeleeBehaviorComponent>(TEXT("MeleeBehaviorComponent"));
+	
+	// 코인 드랍 컴포넌트 설정
+	CoinC = CreateDefaultSubobject<UCoinGenerator>(TEXT("CoinGenerator"));
+	CoinC->SetupAttachment(MeshC);
 }
 
 void AMelee::BeginPlay()
@@ -113,6 +118,7 @@ void AMelee::HandleDeath()
 	}
 
 	// 아이템 드랍
+	CoinC->GenerateCoins(2);
 
 	// 래그돌 전환 및 넉
 	RagDollImpulse();

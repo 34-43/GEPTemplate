@@ -24,6 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere) class UMinionCombatComponent* MinionCombatC;
 	UPROPERTY(VisibleAnywhere) class UHealthComponent* MinionHealthC;
 	UPROPERTY(VisibleAnywhere) class UMinionBehaviorComponent* MinionBehaviorC;
+	UPROPERTY(VisibleAnywhere) class UCoinGenerator* CoinC;
 	
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();

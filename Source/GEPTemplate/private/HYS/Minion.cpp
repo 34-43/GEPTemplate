@@ -10,7 +10,7 @@
 #include "HYS/MinionBehaviorComponent.h"
 #include "HYS/MinionCombatComponent.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "components/CoinGenerator.h"
 
 AMinion::AMinion()
 {
@@ -48,6 +48,10 @@ AMinion::AMinion()
 	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
 	MinionBehaviorC = CreateDefaultSubobject<UMinionBehaviorComponent>(TEXT("MinionBehaviorComponent"));
+
+	// 코인 드랍 컴포넌트 설정
+	CoinC = CreateDefaultSubobject<UCoinGenerator>(TEXT("CoinGenerator"));
+	CoinC->SetupAttachment(MeshC);
 }
 
 void AMinion::BeginPlay()
@@ -114,6 +118,7 @@ void AMinion::HandleDeath()
 	}
 
 	// 아이템 드랍
+	CoinC->GenerateCoins(1);
 
 	// 래그돌 전환 및 넉
 	RagDollImpulse();

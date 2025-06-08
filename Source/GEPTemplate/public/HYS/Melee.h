@@ -24,6 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere) class UMeleeCombatComponent* MeleeCombatC;
 	UPROPERTY(VisibleAnywhere) class UHealthComponent* MeleeHealthC;
 	UPROPERTY(VisibleAnywhere) class UMeleeBehaviorComponent* MeleeBehaviorC;
+	UPROPERTY(VisibleAnywhere) class UCoinGenerator* CoinC;
 	
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();

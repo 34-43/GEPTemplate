@@ -23,6 +23,7 @@ public:
 	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
 	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
 	UPROPERTY(VisibleAnywhere) class UWalkingBehaviorComponent* BehaviorC;
+	UPROPERTY(VisibleAnywhere) class UCoinGenerator* CoinC;
 	
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();
