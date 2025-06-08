@@ -19,7 +19,7 @@ protected:
     class USceneCaptureComponent2D* CaptureComponent;
 
     UPROPERTY(EditAnywhere, Category = "MiniMap")
-    class UTextureRenderTarget2D* RenderTarget;
+	class UTextureRenderTarget2D* RenderTarget;
 
 public:	
 	virtual void Tick(float DeltaTime) override;

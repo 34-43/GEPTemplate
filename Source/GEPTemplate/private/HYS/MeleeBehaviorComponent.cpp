@@ -37,14 +37,16 @@ void UMeleeBehaviorComponent::TickBattle()
 
 	if (distance >= StopDistance)
 	{
+		UE_LOG(LogHAL, Log, TEXT("stop dis"));
 		SetState(EEnemyState::Idle);
 		return;
 	}
-
+	
 	if (MyCombatC && TimeSinceLastAction >= ActionCooldown && Me && Target)
 	{
 		if (IsLowHealth())
 		{
+			UE_LOG(LogHAL, Log, TEXT("low health"));
 			SetState(EEnemyState::Flee);
 			return;
 		}
@@ -53,6 +55,8 @@ void UMeleeBehaviorComponent::TickBattle()
 
 		if (behaviorRand <= WanderExecuteRate)
 		{
+			UE_LOG(LogHAL, Log, TEXT("wander"));
+
 			// 배회 상태 진입 시 방향 초기화
 			WanderDirection = FVector::ZeroVector;
 			WanderElapsedTime = 0.0f;
@@ -65,6 +69,8 @@ void UMeleeBehaviorComponent::TickBattle()
 		}
 		else
 		{
+			UE_LOG(LogHAL, Log, TEXT("attack"));
+
 			int32 totalRate = AttackRate + ParryRate;
 			int32 rand = FMath::RandRange(1, totalRate); // 1부터 총합 사이에서 랜덤값
 
@@ -76,13 +82,6 @@ void UMeleeBehaviorComponent::TickBattle()
 			{
 				// 공격 시작
 				if (!MyCombatC || !Me) return;
-
-				UHealthComponent* health = Me->FindComponentByClass<UHealthComponent>();
-				if (!health || health->CurrentHealth <= 0)
-				{
-					GetWorld()->GetTimerManager().ClearTimer(ComboAttackTimerHandle); // 타이머 제거
-					return;
-				}
 
 				PerformAttack();
 			}
