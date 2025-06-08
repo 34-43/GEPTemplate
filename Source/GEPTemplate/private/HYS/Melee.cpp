@@ -37,6 +37,7 @@ AMelee::AMelee()
 	MeshC = GetMesh();
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f)); // Z축 위치 -90
 	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f)); // Yaw -90도 회전
+	GetMesh()->SetRelativeScale3D(FVector(1.5f));
 
 	// 애니메이션 BP 설정
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
@@ -45,7 +46,7 @@ AMelee::AMelee()
 
 	// 피집중 컴포넌트 설정
 	FocusedC = CreateDefaultSubobject<UFocusedComponent>(TEXT("FocusedComponent"));
-	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
+	FocusedC->SetupWidgetAttachment(MeshC, TEXT("Impact"));
 
 	MeleeBehaviorC = CreateDefaultSubobject<UMeleeBehaviorComponent>(TEXT("MeleeBehaviorComponent"));
 	
@@ -103,6 +104,10 @@ void AMelee::HandleStaggered()
 void AMelee::HandleDeath()
 {
 	// 틱 비활성화
+	if (MeleeBehaviorC)
+	{
+		MeleeBehaviorC->SetState(EEnemyState::Dead);
+	}
 	SetActorTickEnabled(false);
 
 	// UI 삭제

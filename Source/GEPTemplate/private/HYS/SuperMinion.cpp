@@ -1,6 +1,7 @@
 ﻿#include "HYS/SuperMinion.h"
 
 #include "components/BehaviorComponent.h"
+#include "components/HealthComponent.h"
 
 ASuperMinion::ASuperMinion()
 {
@@ -18,7 +19,11 @@ void ASuperMinion::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	
+	if (MinionHealthC)
+	{
+		MinionHealthC->MaxHealth = InitialMaxHealth;
+		MinionHealthC->CurrentHealth = InitialMaxHealth;
+	}
 }
 
 void ASuperMinion::Tick(float DeltaTime)

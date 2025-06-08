@@ -55,7 +55,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Animation") TArray<FName> ParryMontageSections;
 
 	// 전투 능력치
-	UPROPERTY(EditDefaultsOnly, Category = "Combat") float AttackRange = 150.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat") float AttackRange = 250.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float AttackDamage = 25.0f;
 	UPROPERTY(EditDefaultsOnly, Category = "Combat") float StaggerOnParriedTime = 2.0f;
 

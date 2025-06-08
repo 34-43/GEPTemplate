@@ -55,6 +55,8 @@ void UBehaviorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		break;
 	case EEnemyState::Wander: TickWander();
 		break;
+	case EEnemyState::Dead:
+		break;
 	}
 }
 

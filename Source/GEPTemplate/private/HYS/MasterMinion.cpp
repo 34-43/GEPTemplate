@@ -1,6 +1,7 @@
 ﻿#include "HYS/MasterMinion.h"
 
 #include "components/BehaviorComponent.h"
+#include "components/HealthComponent.h"
 
 AMasterMinion::AMasterMinion()
 {
@@ -17,7 +18,12 @@ AMasterMinion::AMasterMinion()
 void AMasterMinion::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (MinionHealthC)
+	{
+		MinionHealthC->MaxHealth = InitialMaxHealth;
+		MinionHealthC->CurrentHealth = InitialMaxHealth;
+	}
 }
 
 void AMasterMinion::Tick(float DeltaTime)

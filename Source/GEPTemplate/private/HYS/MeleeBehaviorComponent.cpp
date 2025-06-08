@@ -4,6 +4,7 @@
 #include "components/HealthComponent.h"
 #include "enemies/BaseEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "HYS/MeleeCombatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -40,7 +41,7 @@ void UMeleeBehaviorComponent::TickBattle()
 		return;
 	}
 
-	if (MyCombatC && TimeSinceLastAction >= ActionCooldown)
+	if (MyCombatC && TimeSinceLastAction >= ActionCooldown && Me && Target)
 	{
 		if (IsLowHealth())
 		{
@@ -50,7 +51,7 @@ void UMeleeBehaviorComponent::TickBattle()
 
 		int32 behaviorRand = FMath::RandRange(1, 100); // 1~100 사이 랜덤값
 
-		if (behaviorRand <= 30)
+		if (behaviorRand <= WanderExecuteRate)
 		{
 			// 배회 상태 진입 시 방향 초기화
 			WanderDirection = FVector::ZeroVector;

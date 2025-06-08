@@ -41,7 +41,7 @@ void UWalkingBehaviorComponent::TickBattle()
 		return;
 	}
 
-	if (MyCombatC && TimeSinceLastAction >= ActionCooldown)
+	if (MyCombatC && TimeSinceLastAction >= ActionCooldown && Me && Target)
 	{
 		if (IsLowHealth())
 		{
@@ -51,7 +51,7 @@ void UWalkingBehaviorComponent::TickBattle()
 
 		int32 behaviorRand = FMath::RandRange(1, 100); // 1~100 사이 랜덤값
 
-		if (behaviorRand <= 30)
+		if (behaviorRand <= WanderExecuteRate)
 		{
 			// 배회 상태 진입 시 방향 초기화
 			WanderDirection = FVector::ZeroVector;

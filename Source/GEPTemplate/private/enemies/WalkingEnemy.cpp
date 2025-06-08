@@ -57,7 +57,7 @@ AWalkingEnemy::AWalkingEnemy()
 	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
 
 	// Set State Component
-	BehaviorC = CreateDefaultSubobject<UWalkingBehaviorComponent>(TEXT("BehaviorComponent"));
+	WalkingBehaviorC = CreateDefaultSubobject<UWalkingBehaviorComponent>(TEXT("BehaviorComponent"));
 	
 	// 코인 드랍 컴포넌트 설정
 	CoinC = CreateDefaultSubobject<UCoinGenerator>(TEXT("CoinGenerator"));
@@ -118,6 +118,10 @@ void AWalkingEnemy::HandleStaggered()
 void AWalkingEnemy::HandleDeath()
 {
 	// 틱 비활성화
+	if (WalkingBehaviorC)
+	{
+		WalkingBehaviorC->SetState(EEnemyState::Dead);
+	}
 	SetActorTickEnabled(false);
 
 	// UI 삭제
