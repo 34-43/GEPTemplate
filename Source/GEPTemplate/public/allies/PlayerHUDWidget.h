@@ -14,6 +14,8 @@ public:
 	// --- 위젯 바인딩 ---
 	UPROPERTY(meta = (BindWidget)) class UProgressBar* PB_Health;
 	UPROPERTY(meta = (BindWidget)) class UProgressBar* PB_Stamina;
+	UPROPERTY(meta = (BindWidget)) class UProgressBar* PB_Boost;
+	UPROPERTY(meta = (BindWidget)) class UOverlay* BoostOverlay;
 	UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_GoldValue;
 	UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_Item_1;
 	UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_Item_2;
@@ -23,8 +25,10 @@ public:
 	// --- 데이터 갱신 함수 ---
 	UFUNCTION() void HandleHealthChanged(int32 NewHealth, int32 MaxHealth);
 	UFUNCTION() void HandleStaminaChanged(float NewStamina, float MaxStamina);
+	UFUNCTION() void HandleBoostChanged(float NewBoost, float MaxBoost);
 	UFUNCTION(BlueprintCallable) void SetHealth(float Percent);
 	UFUNCTION(BlueprintCallable) void SetStamina(float Percent);
+	UFUNCTION(BlueprintCallable) void SetBoost(float Percent);
 	UFUNCTION(BlueprintCallable) void SetGold(int32 GoldAmount);
 
 	// --- 아이템 관련 함수 ---

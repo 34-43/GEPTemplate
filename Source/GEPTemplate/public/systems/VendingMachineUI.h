@@ -39,5 +39,5 @@ protected:
 	// 플레이어 저장
 	UPROPERTY()	AMainCharacter* PlayerRef = nullptr;
 	int32 Coin = 0;
-	int32 Price[2] = { 2, 5 };
+	int32 Price[2] = { 5, 2 };
 };

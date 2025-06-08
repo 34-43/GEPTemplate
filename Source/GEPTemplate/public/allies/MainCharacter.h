@@ -138,6 +138,9 @@ private:
 	// 스탯
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량
 	int32 CurrentGold = 0;
+	// 부스트 상태
+	float SuperBoostTime = 0.f;
+	float MaxBoostTime = 30.f;
 
 	// 아이템 사용 누르기
 	// 눌린 아이템 번호 (0 = 없음, 1 = 아이템1, 2 = 아이템2)

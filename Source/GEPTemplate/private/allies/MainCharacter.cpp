@@ -60,6 +60,11 @@ AMainCharacter::AMainCharacter()
 	CameraC->SetRelativeRotation(FRotator(12, 0, 0));
 	CameraC->PostProcessSettings.MotionBlurAmount = 0.0f;
 	CameraC->SetupAttachment(SpringArmC);
+	// 카메라 충돌 설정
+	SpringArmC->bDoCollisionTest = true;
+	SpringArmC->ProbeSize = 12.0f;
+	SpringArmC->ProbeChannel = ECC_GameTraceChannel2;
+
 
 	// 카메라 회전 설정
 	SpringArmC->bUsePawnControlRotation = true; //마우스 회전을 따라감
@@ -434,10 +439,13 @@ void AMainCharacter::Roll()
 
 void AMainCharacter::TickMovement(float DeltaTime)
 {
+	float OverMoveMultiplier = (SuperBoostTime > 0) ? 1.5f : 1.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f * OverMoveMultiplier;
+	
 	if (bOverMove)
 	{
-		SetActorLocation(GetActorLocation() + OverMoveDirection * OverMoveScale * DeltaTime);
-		AddMovementInput(OverMoveDirection, OverMoveScale * DeltaTime);
+		const FVector DeltaMove = OverMoveDirection * 600.f * OverMoveMultiplier * DeltaTime;
+		SetActorLocation(GetActorLocation() + DeltaMove);
 	}
 	else if (bIgnoreMove)
 	{
@@ -452,7 +460,13 @@ void AMainCharacter::TickMovement(float DeltaTime)
 
 void AMainCharacter::TickStamina(float DeltaTime)
 {
-	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate);
+	// 슈퍼 스태미나 타임 처리
+	SuperBoostTime = FMath::Max(SuperBoostTime - DeltaTime, 0.0f);
+	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+		PlayerHUD->HandleBoostChanged(SuperBoostTime, MaxBoostTime);
+	
+	float RecoveryMultiplier = (SuperBoostTime > 0) ? 1.2f : 1.f;
+	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate * RecoveryMultiplier);
 }
 
 void AMainCharacter::TickFocusControl(float DeltaTime)
@@ -516,6 +530,7 @@ void AMainCharacter::InitializePlayerHUD()
 			{
 				PlayerHUD->HandleHealthChanged(HealthC->CurrentHealth, HealthC->MaxHealth);
 				PlayerHUD->HandleStaminaChanged(StaminaC->CurrentStamina, StaminaC->MaxStamina);
+				PlayerHUD->HandleBoostChanged(SuperBoostTime, MaxBoostTime);
 				PlayerHUD->SetGold(CurrentGold);
 				PlayerHUD->SetItem1(ItemCounts[0]);
 				PlayerHUD->SetItem2(ItemCounts[1]);
@@ -681,9 +696,10 @@ void AMainCharacter::UseItem(int32 ItemCode)
 		}
 		else if (ItemCode == 1)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Item : 물, 스태미나를 50 회복합니다."));
+			UE_LOG(LogTemp, Log, TEXT("Item : 드링크, 스태미나를 50 회복하고 부스트 상태가 됩니다."));
 			if (!StaminaC) return;
 			StaminaC->UpdateStamina(50);
+			SuperBoostTime = MaxBoostTime;
 		}
 	}
 }

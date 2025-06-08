@@ -2,6 +2,7 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Components/Overlay.h"
 
 void UPlayerHUDWidget::NativeConstruct()
 {
@@ -41,6 +42,11 @@ void UPlayerHUDWidget::HandleStaminaChanged(float NewStamina, float MaxStamina)
 	SetStamina(NewStamina / (MaxStamina));
 }
 
+void UPlayerHUDWidget::HandleBoostChanged(float NewBoost, float MaxBoost)
+{
+	SetBoost(NewBoost / (MaxBoost));
+}
+
 void UPlayerHUDWidget::SetHealth(float Percent)
 {
 	if (PB_Health)
@@ -51,6 +57,22 @@ void UPlayerHUDWidget::SetStamina(float Percent)
 {
 	if (PB_Stamina)
 		PB_Stamina->SetPercent(Percent);
+}
+
+void UPlayerHUDWidget::SetBoost(float Percent)
+{
+	if (PB_Boost)
+	{
+		if (FMath::IsNearlyZero(Percent, 0.01f))
+		{
+			BoostOverlay->SetVisibility(ESlateVisibility::Hidden);
+		}
+		else
+		{
+			BoostOverlay->SetVisibility(ESlateVisibility::Visible);
+			PB_Boost->SetPercent(Percent);
+		}
+	}
 }
 
 void UPlayerHUDWidget::SetGold(int32 GoldAmount)

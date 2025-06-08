@@ -24,7 +24,7 @@ ASavePoint::ASavePoint()
 	// 상호작용 컴포넌트 설정
 	InteractC = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 	InteractC->InteractionDuration = 2.5f;
-	InteractC->InteractRange = 200.f;
+	InteractC->InteractRange = 300.f;
 
 	// UI 클래스 설정
 	static ConstructorHelpers::FClassFinder<UUserWidget> GameAlert(TEXT("/Game/UI/WBP_GameAlertUI.WBP_GameAlertUI_C"));
@@ -34,20 +34,6 @@ ASavePoint::ASavePoint()
 void ASavePoint::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeGameAlert();
-}
-
-void ASavePoint::InitializeGameAlert()
-{
-	if (GameAlertUI_W)
-	{
-		GameAlertUIWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUI_W);
-		if (GameAlertUIWidget)
-		{
-			GameAlertUIWidget->AddToViewport();
-			GameAlertUIWidget->SetVisibility(ESlateVisibility::Hidden); // 처음엔 숨김
-		}
-	}
 }
 
 void ASavePoint::Interact(AActor* Caller)
@@ -77,10 +63,16 @@ void ASavePoint::Interact(AActor* Caller)
 
 void ASavePoint::ShowSavedUI()
 {
-	if (auto AlertUI = Cast<UGameAlertUIWidget>(GameAlertUIWidget))
+	if (!GameAlertUI_W) return;
+
+	UUserWidget* NewAlertWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUI_W);
+	if (!NewAlertWidget) return;
+
+	NewAlertWidget->AddToViewport();
+
+	if (auto AlertUI = Cast<UGameAlertUIWidget>(NewAlertWidget))
 	{
-		AlertUI->SetVisibility(ESlateVisibility::Visible);
-		AlertUI->PlayAlert(TEXT("PROGRESS SAVED"), FLinearColor::Green,2);
+		AlertUI->PlayAlert(TEXT("PROGRESS SAVED"), FLinearColor::Green, 2);
 	}
 }
 
