@@ -688,11 +688,6 @@ void AMainCharacter::UseItem(int32 ItemCode)
 	}
 }
 
-UGameAlertUIWidget* AMainCharacter::GetGameAlertUIWidget() const
-{
-	return Cast<UGameAlertUIWidget>(GameAlertUIWidget);
-}
-
 void AMainCharacter::OnItem1Pressed()
 {
 	OnItemReleased();
