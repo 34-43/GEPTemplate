@@ -200,6 +200,11 @@ void AMainCharacter::Tick(float DeltaTime)
 
 	TickMovement(DeltaTime);
 	TickStamina(DeltaTime);
+
+	// 데미지 부스트 임시 처리
+	if (SuperBoostTime > 0) {CombatC->DamageBoost = 1.5f;}
+	else {CombatC->DamageBoost = 1.0f;}
+
 	TickFocusControl(DeltaTime);
 	// 상호작용 처리
 	if (++FrameCounter % 4 == 0) UpdateInteractionFocus();
@@ -439,13 +444,10 @@ void AMainCharacter::Roll()
 
 void AMainCharacter::TickMovement(float DeltaTime)
 {
-	float OverMoveMultiplier = (SuperBoostTime > 0) ? 1.5f : 1.f;
-	GetCharacterMovement()->MaxWalkSpeed = 600.f * OverMoveMultiplier;
-	
 	if (bOverMove)
 	{
-		const FVector DeltaMove = OverMoveDirection * 600.f * OverMoveMultiplier * DeltaTime;
-		SetActorLocation(GetActorLocation() + DeltaMove);
+		SetActorLocation(GetActorLocation() + OverMoveDirection * OverMoveScale * DeltaTime);
+		AddMovementInput(OverMoveDirection, OverMoveScale * DeltaTime);
 	}
 	else if (bIgnoreMove)
 	{

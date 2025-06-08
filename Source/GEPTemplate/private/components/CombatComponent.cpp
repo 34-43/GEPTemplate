@@ -159,7 +159,7 @@ void UCombatComponent::PerformAttackSweep()
 			{
 				if (UCombatComponent* HitCombatC = HitActor->FindComponentByClass<UCombatComponent>())
 				{
-					HitCombatC->Damage(AttackDamage, Forward, this);
+					HitCombatC->Damage(AttackDamage * DamageBoost, Forward, this);
 				}
 			}
 		}

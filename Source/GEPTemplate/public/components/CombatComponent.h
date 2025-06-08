@@ -69,16 +69,15 @@ public:
 	virtual void SetCombatState(ECombatState NewState);
 	virtual void PerformAttackSweep();
 	FVector GetLastHitDirection() { return LastHitDirection; }
+	float DamageBoost = 1.0f;//캐릭터에서 수정할 수 있음
 
 	// 이벤트
 	UPROPERTY(BlueprintAssignable, Category="Event") FOnDamagedSignature OnDamaged;
 	UPROPERTY(BlueprintAssignable, Category="Event") FOnParriedSignature OnParried;
 	UPROPERTY(BlueprintAssignable, Category="Event") FOnStaggeredSignature OnStaggered;
-
 	
 	// 로직
 	FTimerHandle StateTimerHandle;
-	//로직
 	FVector LastHitDirection;
 
 	// 델리게이트
