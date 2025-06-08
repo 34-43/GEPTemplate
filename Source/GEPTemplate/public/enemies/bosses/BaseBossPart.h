@@ -19,22 +19,22 @@ public:
 	ABaseBossPart();
 
 protected:
-	UFUNCTION()
-	virtual void BeginPlay() override;
+	UFUNCTION() virtual void BeginPlay() override;
 	UFUNCTION() void OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	virtual void Tick(float DeltaTime) override;
 	void TickMovement(float DeltaTime);
+	UFUNCTION() void HandleDamaged();
 
 public:
 	// 컴포넌트
-	UPROPERTY(VisibleAnywhere) class UHealthComponent* PartialHealthC;
 	UPROPERTY(VisibleAnywhere) class UFocusedComponent* FocusedC;
 	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
 
 	// 팩토리
 	UPROPERTY(VisibleAnywhere) TSubclassOf<AShockwave> ShockwaveF;
 	UPROPERTY(VisibleAnywhere) TSubclassOf<AExplosion> ExplosionF;
-	// UPROPERTY(VisibleAnywhere) TSubclassOf<AAttackPath> AttackPathF; // 미구현
+	UPROPERTY(VisibleAnywhere) UParticleSystem* DamagedFxF;
+	UPROPERTY(VisibleAnywhere) USoundBase* DamagedSfxF;
 
 	// 파라미터
 	UPROPERTY(VisibleAnywhere) float FlyAcceptance = 10.0f;
@@ -62,10 +62,14 @@ public:
 
 	// 공격 동선을 바닥에 그립니다.
 	void AlertAttackPath(FVector From, FVector To, float LifeTime);
+
+	// 구현된 보스에서 호출해줘야 하는 파츠 소유자 저장 함수입니다.
+	void SetBaseBossCache(class ABaseBoss* OwningBoss);
 	
 protected:
 	// 플레이어 캐시. 서브 클래스에서도 필요할 때 참조할 수 있습니다.
 	UPROPERTY() const AMainCharacter* Player;
+	UPROPERTY() class ABaseBoss* BaseBossCache;
 	
 private:
 	// 로직

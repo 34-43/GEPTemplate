@@ -8,8 +8,10 @@
 #include "components/CombatComponent.h"
 #include "components/FocusedComponent.h"
 #include "Components/ModelComponent.h"
+#include "enemies/bosses/BaseBoss.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 
 
 ABaseBossPart::ABaseBossPart()
@@ -17,7 +19,6 @@ ABaseBossPart::ABaseBossPart()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// 컴포넌트 세팅 --- 피집중C, 전투C
-	PartialHealthC = CreateDefaultSubobject<UHealthComponent>("PartialHealthComponent");
 	FocusedC = CreateDefaultSubobject<UFocusedComponent>("FocusedComponent");
 	FocusedC->SetupWidgetAttachment(GetRootComponent(), NAME_None);
 	CombatC = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
@@ -29,6 +30,12 @@ ABaseBossPart::ABaseBossPart()
 	static ConstructorHelpers::FClassFinder<AExplosion> ExplosionBP(
 		TEXT("/Game/Blueprints/BP_Explosion.BP_Explosion_C"));
 	if (ExplosionBP.Succeeded()) { ExplosionF = ExplosionBP.Class; }
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
+		TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	if (DamagedEffect.Succeeded()) { DamagedFxF = DamagedEffect.Object; }
+	static ConstructorHelpers::FObjectFinder<USoundBase> DamagedSound(
+		TEXT("/Game/Features/BaseBallBatSound/bat_machine.bat_machine"));
+	if (DamagedSound.Succeeded()) { DamagedSfxF = DamagedSound.Object; }
 }
 
 void ABaseBossPart::BeginPlay()
@@ -40,6 +47,9 @@ void ABaseBossPart::BeginPlay()
 
 	// 충돌 델리게이트 연결
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABaseBossPart::OnCapsuleHit);
+
+	// 전투와 체력 델리게이트 연결
+	CombatC->OnDamaged.AddDynamic(this, &ABaseBossPart::HandleDamaged);
 }
 
 void ABaseBossPart::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -99,6 +109,14 @@ void ABaseBossPart::TickMovement(float DeltaTime)
 	GetCharacterMovement()->Velocity = NormalDirection * Speed;
 }
 
+void ABaseBossPart::HandleDamaged()
+{
+	if (BaseBossCache) BaseBossCache->TotalHealthC->UpdateHealth(-40);
+	PRINT_LOG(TEXT("현재 보스 체력: %d"), BaseBossCache->TotalHealthC->CurrentHealth);
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
+	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
+}
+
 void ABaseBossPart::FlyToLocation(const FVector& Location, const float AverageSpeed,
                                   const FOnActionCompleted& OnCompleted)
 {
@@ -153,6 +171,11 @@ void ABaseBossPart::SpawnExplosion(int32 Damage, float ExplosionRadius, FVector 
 	// EP->DamageAmount = Damage;
 	// EP->ExplosionRadius = ExplosionRadius;
 	// EP->FinishSpawning(FTransform(FRotator::ZeroRotator, WorldLocation));
+}
+
+void ABaseBossPart::SetBaseBossCache(ABaseBoss* OwningBoss)
+{
+	BaseBossCache = OwningBoss;
 }
 
 void ABaseBossPart::HandleMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "BaseBossPart.h"
 #include "GameFramework/Character.h"
 #include "BaseBoss.generated.h"
 
@@ -24,6 +25,7 @@ protected:
 	virtual void BeginPlay() override;
 	void InitializeBossHUD();
 	void InitializeGameAlert();
+	void InitializeCreditRoll();
 
 public:
 	virtual void Tick(float DeltaTime) override;
@@ -36,10 +38,14 @@ public:
 	// 위젯
 	UPROPERTY(VisibleAnywhere) TSubclassOf<UUserWidget> BossHUD_W;
 	UPROPERTY(VisibleAnywhere) TSubclassOf<UUserWidget> GameAlertUI_W;
-
+	UPROPERTY(VisibleAnywhere) TSubclassOf<UUserWidget> CreditRoll_W;
+	
 	// 상호작용
 	void ShowVictoryUI() const;
 	UFUNCTION(BlueprintCallable) virtual void TriggerBossFight();
+
+	// 팩토리
+	UPROPERTY() UParticleSystem* ExplosionFxF;
 	
 protected:
 	// 캐시
@@ -53,4 +59,8 @@ private:
 	// 위젯
 	UPROPERTY() UUserWidget* BossHUDWidget;
 	UPROPERTY() UUserWidget* GameAlertUIWidget;
+	UPROPERTY() UUserWidget* CreditRollWidget;
+
+	// 로직
+	FTimerHandle BaseBossTimerHandle;
 };

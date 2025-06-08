@@ -75,6 +75,7 @@ void AStatueBoss::InitializeHub()
 		AStatueBossHand* SpawnedHand = GetWorld()->SpawnActor<AStatueBossHand>(
 			BossHandF, GetActorLocation(), GetActorRotation());
 		BossHands.Add(SpawnedHand);
+		SpawnedHand->SetBaseBossCache(this);
 	}
 
 	// 월드 위치 배열 초기화
@@ -131,8 +132,10 @@ void AStatueBoss::ExecuteNextCycle()
 		ExplosionPattern();
 		break;
 	case 2:
+		ShockwavePattern();
 		break;
 	case 3:
+		ExplosionPattern();
 		break;
 	default:
 		break;
@@ -177,7 +180,6 @@ void AStatueBoss::ShockwavePattern()
 								ExecuteNextCycle();
 							}));
 						}, 2.5f, false);
-
 					}));
 				}));
 			}));
@@ -212,33 +214,49 @@ void AStatueBoss::ExplosionPattern()
 {
 	if (BossHands.Num() > 0)
 	{
+		int32 Picked = FMath::RandRange(0, BossHands.Num() - 1);
 		// 1. 첫 번째 손 사출
-		BossHandsControlFlags[0] = false;
-		BossHands[0]->SetHandState(FRotator(180, 180, 0), EHandAnimState::Rock);
+		BossHandsControlFlags[Picked] = false;
+		BossHands[Picked]->SetHandState(FRotator(180, 180, 0), EHandAnimState::Rock);
+
+		// 플레이어 위로 이동
 		const FVector Loc1 = Player->GetActorLocation() + FVector(0, 0, 1300);
-		BossHands[0]->FlyToLocation(Loc1, 3000.0f, FOnActionCompleted::CreateLambda([this]()
+		BossHands[Picked]->FlyToLocation(Loc1, 3000.0f, FOnActionCompleted::CreateLambda([this, Picked]()
 		{
-			BossHands[0]->SetExplosive(true);
-			BossHands[0]->SetHandState(FRotator(180, 180, 0), EHandAnimState::Rock);
-			BossHands[0]->PoundAndSpawn(FOnActionCompleted::CreateLambda([this]()
+			// 내리찍어 폭발
+			BossHands[Picked]->SetExplosive(true);
+			BossHands[Picked]->SetHandState(FRotator(180, 180, 0), EHandAnimState::Rock);
+			BossHands[Picked]->PoundAndSpawn(FOnActionCompleted::CreateLambda([this, Picked]()
 			{
-				
-			}));
-			
-			if (BossHands.Num() > 1)
-			{
-				// 2. 두 번째 손 사출
-				BossHandsControlFlags[1] = false;
-				const FVector Loc1 = Player->GetActorLocation() + FVector(0, 0, 1300);
-				BossHands[1]->FlyToLocation(Loc1, 4000.0f, FOnActionCompleted::CreateLambda([this]()
+				// 바로 위로 이동
+				const FVector Loc2 = BossHands[Picked]->GetActorLocation() + FVector(0, 0, 1300);
+				BossHands[Picked]->FlyToLocation(Loc2, 6000.0f, FOnActionCompleted::CreateLambda([this, Picked]()
 				{
-					ExecuteNextCycle();
+					// 내리찍어 폭발
+					BossHands[Picked]->PoundAndSpawn(FOnActionCompleted::CreateLambda([this, Picked]()
+					{
+						// 플레이어 위로 이동
+						BossHands[Picked]->SetHandState(FRotator(-90,180,0), EHandAnimState::Paper);
+						const FVector Loc3 = Player->GetActorLocation() + FVector(0, 0, 1300);
+						BossHands[Picked]->FlyToLocation(Loc3, 6000.0f, FOnActionCompleted::CreateLambda([this, Picked]()
+						{
+							// 내리찍어 충격파
+							BossHands[Picked]->SetExplosive(false);
+							BossHands[Picked]->PoundAndSpawn(FOnActionCompleted::CreateLambda([this, Picked]()
+							{
+								// 원위치
+								BossHands[Picked]->SetHandState(FRotator(0, 180, 0), EHandAnimState::Idle);
+								BossHands[Picked]->FlyToLocation(BossHandsWorldLocations[Picked], 2500.0f, FOnActionCompleted::CreateLambda([this, Picked]()
+								{
+									BossHandsControlFlags[Picked] = true;
+									BossHands[Picked]->SetHandState(FRotator(0, 180, 0), EHandAnimState::Idle);
+									ExecuteNextCycle();
+								}));
+							}));
+						}));
+					}));
 				}));
-			}
-			else
-			{
-				ExecuteNextCycle();
-			}
+			}));
 		}));
 	}
 	else

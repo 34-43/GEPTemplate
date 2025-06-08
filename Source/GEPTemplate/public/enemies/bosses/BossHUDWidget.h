@@ -4,9 +4,6 @@
 #include "Blueprint/UserWidget.h"
 #include "BossHUDWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class GEPTEMPLATE_API UBossHUDWidget : public UUserWidget
 {
