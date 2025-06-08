@@ -1,13 +1,10 @@
 ﻿#include "components/BehaviorComponent.h"
 
 #include "allies/MainCharacter.h"
-#include "components/CombatComponent.h"
 #include "components/HealthComponent.h"
 #include "enemies/BaseEnemy.h"
-#include "enemies/WalkingEnemy.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "components/CombatComponent.h"
 
 UBehaviorComponent::UBehaviorComponent()
 {

@@ -21,8 +21,8 @@ void ABlackMelee::BeginPlay()
 	
 	if (MeleeHealthC)
 	{
-		MeleeHealthC->MaxHealth = InitialMaxHealth;
-		MeleeHealthC->CurrentHealth = InitialMaxHealth;
+		MeleeHealthC->MaxHealth = InitialBlackMaxHealth;
+		MeleeHealthC->CurrentHealth = InitialBlackMaxHealth;
 	}
 }
 

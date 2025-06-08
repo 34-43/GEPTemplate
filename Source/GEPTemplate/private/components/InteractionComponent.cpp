@@ -9,7 +9,6 @@
 #include "components/OutlineEffectLibrary.h"
 
 // 상호작용 액터
-#include "GEPTemplate.h"
 #include "objects/ElevatorButton.h"
 #include "objects/WaterDispenser.h"
 #include "objects/ExplosiveBarrel.h"

@@ -1,13 +1,7 @@
 ﻿#include "enemies/BaseEnemy.h"
 
-#include "Components/CapsuleComponent.h"
-#include "components/CombatComponent.h"
-#include "components/FocusedComponent.h"
-#include "components/HealthComponent.h"
 #include "Components/WidgetComponent.h"
 #include "enemies/EnemyFloatingWidget.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 
 

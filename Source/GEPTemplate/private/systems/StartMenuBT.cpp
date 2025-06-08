@@ -3,7 +3,6 @@
 
 #include "systems/StartMenuBT.h"
 #include "Components/TextBlock.h"
-#include "Components/Button.h"
 
 void UStartMenuBT::SetButtonText(const FText& NewText)
 {

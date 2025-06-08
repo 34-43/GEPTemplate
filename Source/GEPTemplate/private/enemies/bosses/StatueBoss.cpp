@@ -1,6 +1,5 @@
 ﻿#include "enemies/bosses/StatueBoss.h"
 
-#include "GEPTemplate.h"
 #include "allies/MainCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PointLightComponent.h"

@@ -1,8 +1,4 @@
-﻿// HealthBarComponent.cpp
-
-#include "components/HealthBarComponent.h"
-#include "components/HealthBarWidget.h"
-#include "components/HealthComponent.h"
+﻿#include "components/HealthBarComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"

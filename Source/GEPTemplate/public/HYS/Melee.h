@@ -34,4 +34,5 @@ public:
 	void RagDollImpulse();
 	
 	bool bIgnoreMove = false;
-	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }};
+	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }
+};

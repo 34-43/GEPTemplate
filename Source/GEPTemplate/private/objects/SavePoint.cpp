@@ -2,7 +2,6 @@
 
 #include "objects/SavePoint.h"
 
-#include "GEPTemplate.h"
 #include "components/InteractionComponent.h"
 #include "GameFramework/Actor.h"
 #include "Sound/SoundAttenuation.h"

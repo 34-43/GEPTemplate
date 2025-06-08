@@ -21,8 +21,8 @@ void ABlueMelee::BeginPlay()
 	
 	if (MeleeHealthC)
 	{
-		MeleeHealthC->MaxHealth = InitialMaxHealth;
-		MeleeHealthC->CurrentHealth = InitialMaxHealth;
+		MeleeHealthC->MaxHealth = InitialBlueMaxHealth;
+		MeleeHealthC->CurrentHealth = InitialBlueMaxHealth;
 	}
 }
 

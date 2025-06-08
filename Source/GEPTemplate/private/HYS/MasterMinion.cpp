@@ -1,6 +1,5 @@
 ﻿#include "HYS/MasterMinion.h"
 
-#include "components/BehaviorComponent.h"
 #include "components/HealthComponent.h"
 
 AMasterMinion::AMasterMinion()

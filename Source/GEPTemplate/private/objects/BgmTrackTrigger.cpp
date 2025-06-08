@@ -11,25 +11,25 @@ ABgmTrackTrigger::ABgmTrackTrigger()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void ABgmTrackTrigger::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-#if WITH_EDITOR
-	// TriggerRadius 크기의 구를 에디터에서 표시
-	DrawDebugSphere(
-		GetWorld(),
-		GetActorLocation(),
-		TriggerRadius,
-		16,                      // 세그먼트 수 (둥글게)
-		FColor::Green,
-		false,                   // 지속 표시 (false면 잠깐만 보여짐)
-		-1.0f,                   // 시간 (음수는 무제한)
-		0,
-		2.f                     // 선 두께
-	);
-#endif
-}
+// void ABgmTrackTrigger::OnConstruction(const FTransform& Transform)
+// {
+// 	Super::OnConstruction(Transform);
+//
+// #if WITH_EDITOR
+// 	// TriggerRadius 크기의 구를 에디터에서 표시
+// 	DrawDebugSphere(
+// 		GetWorld(),
+// 		GetActorLocation(),
+// 		TriggerRadius,
+// 		16,                      // 세그먼트 수 (둥글게)
+// 		FColor::Green,
+// 		false,                   // 지속 표시 (false면 잠깐만 보여짐)
+// 		-1.0f,                   // 시간 (음수는 무제한)
+// 		0,
+// 		2.f                     // 선 두께
+// 	);
+// #endif
+// }
 
 void ABgmTrackTrigger::BeginPlay()
 {

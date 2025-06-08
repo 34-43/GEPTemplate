@@ -16,9 +16,9 @@ class GEPTEMPLATE_API ABgmTrackTrigger : public AActor
 public:
 	ABgmTrackTrigger();
 
-#if WITH_EDITOR
-	virtual void OnConstruction(const FTransform& Transform) override;
-#endif
+// #if WITH_EDITOR
+// 	virtual void OnConstruction(const FTransform& Transform) override;
+// #endif
 
 protected:
 	virtual void BeginPlay() override;

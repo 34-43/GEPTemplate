@@ -18,5 +18,5 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, Category = "SkyMelee") int32 InitialMaxHealth = 100;
+	UPROPERTY(EditAnywhere, Category = "SkyMelee") int32 InitialSkyMaxHealth = 100;
 };

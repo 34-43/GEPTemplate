@@ -4,7 +4,6 @@
 #include "components/InteractionComponent.h"
 #include "GameFramework/Actor.h"
 #include "Blueprint/UserWidget.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/Engine.h"
 #include "systems/VendingMachineUI.h"
 

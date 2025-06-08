@@ -18,7 +18,6 @@
 #include "Components/TextBlock.h"
 #include "components/InteractionComponent.h"
 #include "TimerManager.h"
-#include "Chaos/PBDJointConstraintData.h"
 
 #include "Kismet/KismetMathLibrary.h"
 
