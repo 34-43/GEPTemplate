@@ -1,5 +1,7 @@
 ﻿#include "HYS/WhiteMelee.h"
 
+#include "components/HealthComponent.h"
+
 
 AWhiteMelee::AWhiteMelee()
 {
@@ -16,6 +18,12 @@ AWhiteMelee::AWhiteMelee()
 void AWhiteMelee::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (MeleeHealthC)
+	{
+		MeleeHealthC->MaxHealth = InitialMaxHealth;
+		MeleeHealthC->CurrentHealth = InitialMaxHealth;
+	}
 }
 
 void AWhiteMelee::Tick(float DeltaTime)

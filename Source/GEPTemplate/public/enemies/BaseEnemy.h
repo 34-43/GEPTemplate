@@ -35,7 +35,7 @@ public:
 
 	// 능력치
 	UPROPERTY(VisibleAnywhere, Category = "AI") float DetectionRadius = 1000.0f;
-	UPROPERTY(VisibleAnywhere, Category = "AI") float AttackRange = 200.0f;
+	UPROPERTY(VisibleAnywhere, Category = "AI") float AttackRange = 250.0f;
 	UPROPERTY(VisibleAnywhere, Category = "AI") float LateralDistance = 300.0f;
 	UPROPERTY(VisibleAnywhere, Category = "AI") float StaggerDuration = 2.0f;
 

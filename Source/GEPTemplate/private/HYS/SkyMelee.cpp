@@ -1,5 +1,7 @@
 ﻿#include "HYS/SkyMelee.h"
 
+#include "components/HealthComponent.h"
+
 
 ASkyMelee::ASkyMelee()
 {
@@ -16,7 +18,12 @@ ASkyMelee::ASkyMelee()
 void ASkyMelee::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (MeleeHealthC)
+	{
+		MeleeHealthC->MaxHealth = InitialMaxHealth;
+		MeleeHealthC->CurrentHealth = InitialMaxHealth;
+	}
 }
 
 void ASkyMelee::Tick(float DeltaTime)

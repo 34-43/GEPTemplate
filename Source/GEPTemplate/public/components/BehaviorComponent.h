@@ -14,6 +14,7 @@ enum class EEnemyState:uint8
 	Battle,
 	Flee,
 	Wander,
+	Dead,
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -53,9 +54,9 @@ public:
 	UPROPERTY(EditAnywhere, Category="Flee") float FleeCooldownTime = 1.0f;
 	UPROPERTY(EditAnywhere, Category="Flee") float FleeAngle = 60.0f;
 
-	UPROPERTY(EditAnywhere, Category="Battle") float ActionCooldown = 1.5f;
-	UPROPERTY(EditAnywhere, Category="Battle") float AttackRate = 75.0f;
-	UPROPERTY(EditAnywhere, Category="Battle") float ParryRate = 25.0f;
+	UPROPERTY(EditAnywhere, Category="Battle") float ActionCooldown = 1.0f;
+	UPROPERTY(EditAnywhere, Category="Battle") float AttackRate = 85.0f;
+	UPROPERTY(EditAnywhere, Category="Battle") float ParryRate = 15.0f;
 	UPROPERTY(EditAnywhere, Category="Battle") int CurrentComboIndex;
 	UPROPERTY(EditAnywhere, Category="Battle") int MaxComboCount;
 
@@ -73,5 +74,6 @@ protected:
 	float WanderAngle = 0.0f;           // 현재 각도
 	float WanderRadius = 170.0f;        // 플레이어 기준 반지름
 	float WanderSpeed = 90.0f;          // 초당 회전 각도 (도 단위)
+	float WanderExecuteRate = 15.0f;
 	int32 WanderDirectionSign = 1; // +1이면 시계방향, -1이면 반시계방향
 };

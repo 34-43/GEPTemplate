@@ -22,7 +22,7 @@ public:
 	
 	UPROPERTY(VisibleAnywhere) class UCombatComponent* CombatC;
 	UPROPERTY(VisibleAnywhere) class UHealthComponent* HealthC;
-	UPROPERTY(VisibleAnywhere) class UWalkingBehaviorComponent* BehaviorC;
+	UPROPERTY(VisibleAnywhere) class UWalkingBehaviorComponent* WalkingBehaviorC;
 	
 	UFUNCTION() void HandleDamaged();
 	UFUNCTION() void HandleParried();

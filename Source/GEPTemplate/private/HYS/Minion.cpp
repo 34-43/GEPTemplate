@@ -45,7 +45,7 @@ AMinion::AMinion()
 
 	// 피집중 컴포넌트 설정
 	FocusedC = CreateDefaultSubobject<UFocusedComponent>(TEXT("FocusedComponent"));
-	FocusedC->SetupWidgetAttachment(MeshC, TEXT("focus"));
+	FocusedC->SetupWidgetAttachment(MeshC, TEXT("Status"));
 
 	MinionBehaviorC = CreateDefaultSubobject<UMinionBehaviorComponent>(TEXT("MinionBehaviorComponent"));
 }
@@ -99,6 +99,10 @@ void AMinion::HandleStaggered()
 void AMinion::HandleDeath()
 {
 	// 틱 비활성화
+	if (MinionBehaviorC)
+	{
+		MinionBehaviorC->SetState(EEnemyState::Dead);
+	}
 	SetActorTickEnabled(false);
 
 	// UI 삭제

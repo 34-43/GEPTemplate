@@ -17,4 +17,6 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
+
+	UPROPERTY(EditAnywhere, Category = "MasterMinion") int32 InitialMaxHealth = 100;
 };
