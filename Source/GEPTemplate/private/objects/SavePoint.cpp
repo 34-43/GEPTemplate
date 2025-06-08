@@ -1,12 +1,15 @@
 ﻿// SavePoint.cpp
 
 #include "objects/SavePoint.h"
+
+#include "GEPTemplate.h"
 #include "components/InteractionComponent.h"
 #include "GameFramework/Actor.h"
 #include "Sound/SoundAttenuation.h"
 #include "allies/MainCharacter.h"
 #include "systems/GameSettingsInstance.h"
 #include "TimerManager.h"
+#include "allies/GameAlertUIWidget.h"
 
 // Sets default values
 ASavePoint::ASavePoint()
@@ -21,7 +24,11 @@ ASavePoint::ASavePoint()
 	// 상호작용 컴포넌트 설정
 	InteractC = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 	InteractC->InteractionDuration = 2.5f;
-	InteractC->InteractRange = 200.f;
+	InteractC->InteractRange = 300.f;
+
+	// UI 클래스 설정
+	static ConstructorHelpers::FClassFinder<UUserWidget> GameAlert(TEXT("/Game/UI/WBP_GameAlertUI.WBP_GameAlertUI_C"));
+	if (GameAlert.Succeeded()) { GameAlertUI_W = GameAlert.Class; }
 }
 
 void ASavePoint::BeginPlay()
@@ -44,10 +51,29 @@ void ASavePoint::Interact(AActor* Caller)
 	
 	UE_LOG(LogTemp, Log, TEXT("SavePoint '%s' saved data for player '%s'."), *GetName(), *Player->GetName());
 	InteractC->SetPower(false);
+
+	// UI 띄우기
+	ShowSavedUI();
+	
 	// 몇 초 후 다시 활성화
 	GetWorld()->GetTimerManager().SetTimer(
 		ReenableTimerHandle, this, &ASavePoint::ReenablePower, 2.0f, false
 	);
+}
+
+void ASavePoint::ShowSavedUI()
+{
+	if (!GameAlertUI_W) return;
+
+	UUserWidget* NewAlertWidget = CreateWidget<UUserWidget>(GetWorld(), GameAlertUI_W);
+	if (!NewAlertWidget) return;
+
+	NewAlertWidget->AddToViewport();
+
+	if (auto AlertUI = Cast<UGameAlertUIWidget>(NewAlertWidget))
+	{
+		AlertUI->PlayAlert(TEXT("PROGRESS SAVED"), FLinearColor::Green, 2);
+	}
 }
 
 void ASavePoint::ReenablePower()

@@ -32,8 +32,6 @@ public:
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = Camera) class USpringArmComponent* SpringArmC;
 	UPROPERTY(VisibleAnywhere, Category = Camera) class UCameraComponent* CameraC;
-	// UPROPERTY(VisibleAnywhere, Category = GunMesh) USkeletalMeshComponent* GunMeshC;
-	// UPROPERTY(VisibleAnywhere, Category = GunMesh) UStaticMeshComponent* SniperMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Wield) UStaticMeshComponent* BatMeshC;
 	UPROPERTY(VisibleAnywhere, Category = Combat) class UCombatComponent* CombatC;
 	UPROPERTY(VisibleAnywhere, Category = Focusing) class UFocusingComponent* FocusingC;
@@ -49,7 +47,6 @@ public:
 	UPROPERTY(VisibleAnywhere) USoundBase* ParriedSfxF;
 
 	// 위젯
-	// UPROPERTY(EditDefaultsOnly, Category = "UI") TSubclassOf<UUserWidget> SniperUI_W;
 	UPROPERTY(EditAnywhere, Category = "UI") TSubclassOf<UUserWidget> MiniMapW;// 미니맵 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> PlayerHUD_W;// 유저 상태 위젯 변수
 	UPROPERTY(EditAnywhere, Category="UI") TSubclassOf<UUserWidget> GameAlertUI_W;// 개임 알림 위젯 변수
@@ -64,12 +61,6 @@ public:
 	void InputJump();
 	void StartInteract();
 	void CancelInteract();
-	void SetOverrideMovement(bool value);
-	void SetOverrideMovement(FVector NewDirection);
-	// void InputFire();
-	// void InputChangeGrenadeGun();
-	// void InputChangeSniperGun();
-	// void InputSniperAim();
 
 	// 상호작용
 	void SetIgnoreMove(const bool Value) { bIgnoreMove = Value; }
@@ -83,8 +74,6 @@ public:
 	UFUNCTION() void EndFocusControl();
 	
 	// 상태 변경
-	void ManageStamina(float Amount); // 스태미너 관리
-	void RecoverStamina(); // 스태미너 회복
 	bool ManageGold(int32 Amount); // 골드 관리
 	int32 GetGold() const { return CurrentGold; } // 골드 정보
 	
@@ -130,7 +119,7 @@ private:
 	bool bOverControl = false;
 	UPROPERTY() UFocusedComponent* TargetFocusedC;
 
-	// 틱 프로시저
+	// 틱 프로시저 
 	void TickMovement(float DeltaTime);
 	void TickStamina(float DeltaTime); // stamina natural recovery
 	void TickFocusControl(float DeltaTime);
@@ -141,14 +130,17 @@ private:
 	void InitializeGameAlert();
 	void InitializeBgmPlayer();
 	// UUserWidget* _sniperUI;
-	UUserWidget* MiniMapWidget;// 미니맵 변수
-	UUserWidget* PlayerHUDWidget;// 유저 상태 변수
-	UUserWidget* GameAlertUIWidget;// 게임 알림 변수
-	UBgmPlayer* BgmPlayerWidget;// BGM 플레이어 변수
+	UPROPERTY() UUserWidget* MiniMapWidget;// 미니맵 변수
+	UPROPERTY() UUserWidget* PlayerHUDWidget;// 유저 상태 변수
+	UPROPERTY() UUserWidget* GameAlertUIWidget;// 게임 알림 변수
+	UPROPERTY() UBgmPlayer* BgmPlayerWidget;// BGM 플레이어 변수
 
 	// 스탯
 	float StaminaRecoveryRate = 5.f; // 초당 스태미너 회복량
 	int32 CurrentGold = 0;
+	// 부스트 상태
+	float SuperBoostTime = 0.f;
+	float MaxBoostTime = 30.f;
 
 	// 아이템 사용 누르기
 	// 눌린 아이템 번호 (0 = 없음, 1 = 아이템1, 2 = 아이템2)

@@ -60,6 +60,11 @@ AMainCharacter::AMainCharacter()
 	CameraC->SetRelativeRotation(FRotator(12, 0, 0));
 	CameraC->PostProcessSettings.MotionBlurAmount = 0.0f;
 	CameraC->SetupAttachment(SpringArmC);
+	// 카메라 충돌 설정
+	SpringArmC->bDoCollisionTest = true;
+	SpringArmC->ProbeSize = 12.0f;
+	SpringArmC->ProbeChannel = ECC_GameTraceChannel2;
+
 
 	// 카메라 회전 설정
 	SpringArmC->bUsePawnControlRotation = true; //마우스 회전을 따라감
@@ -73,22 +78,6 @@ AMainCharacter::AMainCharacter()
 	SpringArmC->CameraLagSpeed = 50.0f;
 	SpringArmC->bEnableCameraRotationLag = true;
 	SpringArmC->CameraRotationLagSpeed = 50.0f;
-
-	// // 건 메시 설정
-	// GunMeshC = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunMeshComponent"));
-	// GunMeshC->SetupAttachment(MeshC);
-	// GunMeshC->SetRelativeLocation(FVector(-14, 52, 120));
-	// static ConstructorHelpers::FObjectFinder<USkeletalMesh> GunMesh(
-	// 	TEXT("/Game/Features/FPWeapon/Mesh/SK_FPGun.SK_FPGun"));
-	// if (GunMesh.Succeeded()) { GunMeshC->SetSkeletalMesh(GunMesh.Object); }
-	//
-	// // 스나이퍼 메시 설정
-	// SniperMeshC = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperStaticMeshComponent"));
-	// SniperMeshC->SetupAttachment(MeshC);
-	// SniperMeshC->SetRelativeLocation(FVector(-22, 55, 120));
-	// SniperMeshC->SetRelativeScale3D(FVector(0.15f));
-	// static ConstructorHelpers::FObjectFinder<UStaticMesh> SniperMesh(TEXT("/Game/Features/SniperGun/sniper1.sniper1"));
-	// if (SniperMesh.Succeeded()) { SniperMeshC->SetStaticMesh(SniperMesh.Object); }
 
 	// 배트 메시 설정
 	BatMeshC = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BatStaticMeshComponent"));
@@ -122,11 +111,6 @@ AMainCharacter::AMainCharacter()
 		TEXT("/Game/StarterContent/Particles/P_BulletEffect.P_BulletEffect"));
 	if (BulletEffect.Succeeded()) { BulletEffectF = BulletEffect.Object; }
 
-	// 스나이퍼 UI 설정
-	// static ConstructorHelpers::FClassFinder<UUserWidget> SniperUiBP(
-	// 	TEXT("/Game/UI/BP_SniperUi.BP_SniperUi_C"));
-	// if (SniperUiBP.Succeeded()) { SniperUI_W = SniperUiBP.Class; }
-
 	// UI 클래스 설정
 	static ConstructorHelpers::FClassFinder<UUserWidget> MiniMap(TEXT("/Game/UI/WBP_Minimap.WBP_Minimap_C"));
 	if (MiniMap.Succeeded()) { MiniMapW = MiniMap.Class; }
@@ -136,6 +120,8 @@ AMainCharacter::AMainCharacter()
 	if (GameAlert.Succeeded()) { GameAlertUI_W = GameAlert.Class; }
 	static ConstructorHelpers::FClassFinder<UUserWidget> BGMPlayer(TEXT("/Game/UI/WBP_BGMPlayer.WBP_BGMPlayer_C"));
 	if (BGMPlayer.Succeeded()) { BGMPlayer_W = BGMPlayer.Class; }
+	static ConstructorHelpers::FClassFinder<UUserWidget> Restart(TEXT("/Game/UI/WBP_RestartMenu.WBP_RestartMenu_C"));
+	if (Restart.Succeeded()) { Restart_W = Restart.Class; }
 
 	// 팩토리 설정
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> DamagedEffect(
@@ -172,9 +158,6 @@ void AMainCharacter::BeginPlay()
 	InitializeMiniMap(); // 미니맵 생성 함수 호출
 	InitializePlayerHUD(); // 유저 상태 생성 함수 호출
 	InitializeGameAlert(); // 유저 상태 생성 함수 호출
-
-	// _sniperUI = CreateWidget(GetWorld(), SniperUiF);
-	// InputChangeSniperGun();
 
 	if (auto Widget = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
 	{
@@ -232,11 +215,6 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMainCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMainCharacter::MoveRight);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMainCharacter::InputJump);
-	// PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMainCharacter::InputFire);
-	// PlayerInputComponent->BindAction("GrenadeGun", IE_Pressed, this, &AMainCharacter::InputChangeGrenadeGun);
-	// PlayerInputComponent->BindAction("SniperGun", IE_Pressed, this, &AMainCharacter::InputChangeSniperGun);
-	// PlayerInputComponent->BindAction("SniperAim", IE_Pressed, this, &AMainCharacter::InputSniperAim);
-	// PlayerInputComponent->BindAction("SniperAim", IE_Released, this, &AMainCharacter::InputSniperAim);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMainCharacter::StartInteract);
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMainCharacter::CancelInteract);
 	PlayerInputComponent->BindAction("Item1", IE_Pressed, this, &AMainCharacter::OnItem1Pressed);
@@ -246,9 +224,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	// 전투 컴포넌트 바인드
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, CombatC, &UCombatComponent::Attack);
-	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &AMainCharacter::Roll);
+	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &AMainCharacter::Roll); //구르기는 직접 처리
 	PlayerInputComponent->BindAction("Parry", IE_Pressed, CombatC, &UCombatComponent::Parry);
-
 	PlayerInputComponent->BindAction("Focus", IE_Pressed, FocusingC, &UFocusingComponent::CycleTarget);
 }
 
@@ -380,8 +357,6 @@ void AMainCharacter::UpdateInteractionFocus()
 				if (!Interaction->IsPowerOn) continue;
 				FVector TargetLocation = OverlappedActor->GetActorLocation();
 				// 상호작용 거리 초과 시 무시
-				//float Distance = FVector::Dist(PlayerLocation, TargetLocation);
-				//if (Distance > MaxDistance) continue;
 				if (!Interaction->IsInRange()) continue;
 				// 카메라가 바라보는 방향과 대상 간 방향 비교
 				FVector ToTarget = (TargetLocation - PlayerLocation).GetSafeNormal();
@@ -427,62 +402,6 @@ void AMainCharacter::InputJump()
 	}
 }
 
-// void AMainCharacter::InputFire()
-// {
-// 	if (bUsingGrenadeGun)
-// 	{
-// 		const FTransform FireLocation = GunMeshC->GetSocketTransform(TEXT("FireLocation"));
-// 		GetWorld()->SpawnActor<ABaseBullet>(BulletF, FireLocation);
-// 	}
-// 	else
-// 	{
-// 		FVector StartLocation = CameraC->GetComponentLocation();
-// 		FVector EndLocation = StartLocation + CameraC->GetForwardVector() * 5000.0f;
-// 		FHitResult HitInfo;
-// 		FCollisionQueryParams Params;
-// 		Params.AddIgnoredActor(this);
-// 		bool bHit = GetWorld()->LineTraceSingleByChannel(HitInfo, StartLocation, EndLocation, ECC_Visibility, Params);
-// 		if (bHit)
-// 		{
-// 			FTransform BulletTransform;
-// 			BulletTransform.SetLocation(HitInfo.ImpactPoint);
-// 			PRINT_LOG(TEXT("Bullet Transform : %s"), *BulletTransform.GetLocation().ToString());
-// 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BulletEffectF, BulletTransform);
-// 		}
-// 	}
-// }
-//
-// void AMainCharacter::InputChangeGrenadeGun()
-// {
-// 	bUsingGrenadeGun = true;
-// 	SniperMeshC->SetVisibility(false);
-// 	GunMeshC->SetVisibility(true);
-// }
-//
-// void AMainCharacter::InputChangeSniperGun()
-// {
-// 	bUsingGrenadeGun = false;
-// 	SniperMeshC->SetVisibility(true);
-// 	GunMeshC->SetVisibility(false);
-// }
-//
-// void AMainCharacter::InputSniperAim()
-// {
-// 	if (bUsingGrenadeGun) { return; }
-// 	if (bSniperAim == false)
-// 	{
-// 		bSniperAim = true;
-// 		_sniperUI->AddToViewport();
-// 		CameraC->SetFieldOfView(45.0f);
-// 	}
-// 	else
-// 	{
-// 		bSniperAim = false;
-// 		_sniperUI->RemoveFromViewport();
-// 		CameraC->SetFieldOfView(90.0f);
-// 	}
-// }
-
 void AMainCharacter::Roll()
 {
 	// 유휴, 이동 이외의 상태일 경우 회피 불가능
@@ -520,10 +439,13 @@ void AMainCharacter::Roll()
 
 void AMainCharacter::TickMovement(float DeltaTime)
 {
+	float OverMoveMultiplier = (SuperBoostTime > 0) ? 1.5f : 1.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f * OverMoveMultiplier;
+	
 	if (bOverMove)
 	{
-		SetActorLocation(GetActorLocation() + OverMoveDirection * OverMoveScale * DeltaTime);
-		AddMovementInput(OverMoveDirection, OverMoveScale * DeltaTime);
+		const FVector DeltaMove = OverMoveDirection * 600.f * OverMoveMultiplier * DeltaTime;
+		SetActorLocation(GetActorLocation() + DeltaMove);
 	}
 	else if (bIgnoreMove)
 	{
@@ -538,7 +460,13 @@ void AMainCharacter::TickMovement(float DeltaTime)
 
 void AMainCharacter::TickStamina(float DeltaTime)
 {
-	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate);
+	// 슈퍼 스태미나 타임 처리
+	SuperBoostTime = FMath::Max(SuperBoostTime - DeltaTime, 0.0f);
+	if (UPlayerHUDWidget* PlayerHUD = Cast<UPlayerHUDWidget>(PlayerHUDWidget))
+		PlayerHUD->HandleBoostChanged(SuperBoostTime, MaxBoostTime);
+	
+	float RecoveryMultiplier = (SuperBoostTime > 0) ? 1.2f : 1.f;
+	StaminaC->UpdateStamina(DeltaTime * StaminaRecoveryRate * RecoveryMultiplier);
 }
 
 void AMainCharacter::TickFocusControl(float DeltaTime)
@@ -602,6 +530,7 @@ void AMainCharacter::InitializePlayerHUD()
 			{
 				PlayerHUD->HandleHealthChanged(HealthC->CurrentHealth, HealthC->MaxHealth);
 				PlayerHUD->HandleStaminaChanged(StaminaC->CurrentStamina, StaminaC->MaxStamina);
+				PlayerHUD->HandleBoostChanged(SuperBoostTime, MaxBoostTime);
 				PlayerHUD->SetGold(CurrentGold);
 				PlayerHUD->SetItem1(ItemCounts[0]);
 				PlayerHUD->SetItem2(ItemCounts[1]);
@@ -767,9 +696,10 @@ void AMainCharacter::UseItem(int32 ItemCode)
 		}
 		else if (ItemCode == 1)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Item : 물, 스태미나를 50 회복합니다."));
+			UE_LOG(LogTemp, Log, TEXT("Item : 드링크, 스태미나를 50 회복하고 부스트 상태가 됩니다."));
 			if (!StaminaC) return;
 			StaminaC->UpdateStamina(50);
+			SuperBoostTime = MaxBoostTime;
 		}
 	}
 }
