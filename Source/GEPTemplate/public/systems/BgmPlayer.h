@@ -16,7 +16,7 @@ class GEPTEMPLATE_API UBgmPlayer : public UUserWidget
 public:
 	// 지정한 인덱스에 해당하는 트랙으로 변경
 	// 인덱스가 유효하지 않으면 아무 동작하지 않음
-	UFUNCTION() void SetTrack(int32 Index);
+	UFUNCTION(BlueprintCallable) void SetTrack(int32 Index);
 	int32 GetTrack() const { return CurrentTrackIndex; }
 
 protected:

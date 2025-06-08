@@ -30,6 +30,9 @@ AWalkingEnemy::AWalkingEnemy()
 	if (FloatingWidgetBP.Succeeded()) { FloatingWidgetC->SetWidgetClass(FloatingWidgetBP.Class); }
 	
 	CombatC = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> WalkingEnemyAttackMontageFinder(
+		TEXT("/Game/Features/Mannequin/Animations/Montage/WalkingEnemyAttackMontage.WalkingEnemyAttackMontage"));
+	if (WalkingEnemyAttackMontageFinder.Succeeded()) { CombatC->AttackMontage = WalkingEnemyAttackMontageFinder.Object; }
 	
 	// 체력 컴포넌트 설정
 	HealthC = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));

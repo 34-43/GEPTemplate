@@ -35,6 +35,7 @@ AMainCharacter::AMainCharacter()
 
 	// 충돌 설정
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Character"));
+	GetCapsuleComponent()->bTraceComplexOnMove = true;
 
 	// 메시 설정
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMesh(
