@@ -34,7 +34,7 @@ void AMinimapCaptureActor::Tick(float DeltaTime)
 
 	if (ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
 	{
-		SetActorLocation(Player->GetActorLocation() + FVector(0.f, 0.f, 2000.f));
+		SetActorLocation(Player->GetActorLocation() + FVector(0.f, 0.f, 850.f));
 		SetActorRotation(FRotator(-90.f, 0.f, 0.f)); // 고정된 시점
 	}
 }

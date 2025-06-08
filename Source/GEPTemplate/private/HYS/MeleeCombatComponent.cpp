@@ -23,7 +23,7 @@ UMeleeCombatComponent::UMeleeCombatComponent()
 
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeAttackC_M_Obj(
 		TEXT("/Game/HYS/Melee/Montage/Melee_AttackC_Montage.Melee_AttackC_Montage"));
-	if (MeleeAttackC_M_Obj.Succeeded()) { MeleeAttackA_M = MeleeAttackC_M_Obj.Object; }
+	if (MeleeAttackC_M_Obj.Succeeded()) { MeleeAttackC_M = MeleeAttackC_M_Obj.Object; }
 
 	// 패링 몽타주 설정
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> MeleeParry_M_Obj(
@@ -74,21 +74,45 @@ void UMeleeCombatComponent::Attack()
 			const int RandRate = FMath::RandRange(0, 2);
 
 			UE_LOG(LogTemp, Warning, TEXT("RandRate: %d"), RandRate); // todo: remove
+			UAnimMontage* SelectedMontage = nullptr;
 			if (RandRate == 0)
 			{
-				AnimInst->Montage_Play(MeleeAttackA_M);
+				SelectedMontage = MeleeAttackA_M;
 			}
 			else if (RandRate == 1)
 			{
-				AnimInst->Montage_Play(MeleeAttackB_M);
+				SelectedMontage = MeleeAttackB_M;
 			}
 			else
 			{
-				AnimInst->Montage_Play(MeleeAttackC_M);
+				SelectedMontage = MeleeAttackC_M;
+			}
+
+			if (SelectedMontage)
+			{
+				float PlayResult = AnimInst->Montage_Play(SelectedMontage);
+				UE_LOG(LogTemp, Warning, TEXT("RandRate: %d | Playing Montage: %s | PlayResult: %.2f"),
+				       RandRate,
+				       *SelectedMontage->GetName(),
+				       PlayResult);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("RandRate: %d | SelectedMontage is NULL!"), RandRate);
 			}
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AnimInst is NULL!"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CombatState is not IdleMoving: %d"), (uint8)CombatState);
 	}
 }
+
+
 
 void UMeleeCombatComponent::Parry()
 {
@@ -199,7 +223,7 @@ void UMeleeCombatComponent::PerformAttackSweep()
 		FCollisionQueryParams Params(NAME_None, false, Char);
 		TArray<FHitResult> HitResults;
 		bool bHit = GetWorld()->SweepMultiByChannel(HitResults, Start, End, FQuat::Identity, ECC_GameTraceChannel3,
-													Capsule, Params);
+		                                            Capsule, Params);
 
 		for (auto& Hit : HitResults)
 		{

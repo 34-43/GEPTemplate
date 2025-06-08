@@ -30,5 +30,5 @@ public:
 	FTimerHandle AttackEndTimerHandle;
 
 private:
-	bool bAttackFlag = true;
+	bool bIsAttacking = false;
 };

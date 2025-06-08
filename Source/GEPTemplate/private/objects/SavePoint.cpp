@@ -56,19 +56,19 @@ void ASavePoint::Interact(AActor* Caller)
 
 	AMainCharacter* Player = Cast<AMainCharacter>(Caller);
 	if (!Player) return;
-	
+
 	UGameSettingsInstance* GI = Cast<UGameSettingsInstance>(GetGameInstance());
 	if (GI)
 	{
 		GI->SavePlayerData(Player);
 	}
-	
+
 	UE_LOG(LogTemp, Log, TEXT("SavePoint '%s' saved data for player '%s'."), *GetName(), *Player->GetName());
 	InteractC->SetPower(false);
 
 	// UI 띄우기
 	ShowSavedUI();
-	
+
 	// 몇 초 후 다시 활성화
 	GetWorld()->GetTimerManager().SetTimer(
 		ReenableTimerHandle, this, &ASavePoint::ReenablePower, 2.0f, false
@@ -80,7 +80,7 @@ void ASavePoint::ShowSavedUI()
 	if (auto AlertUI = Cast<UGameAlertUIWidget>(GameAlertUIWidget))
 	{
 		AlertUI->SetVisibility(ESlateVisibility::Visible);
-		AlertUI->PlayAlert(TEXT("PROGRESS SAVED"), FLinearColor::Green,2);
+		AlertUI->PlayAlert(TEXT("PROGRESS SAVED"), FLinearColor::Green, 2);
 	}
 }
 
