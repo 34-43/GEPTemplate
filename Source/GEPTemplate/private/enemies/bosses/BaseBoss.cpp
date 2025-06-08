@@ -5,6 +5,7 @@
 #include "components/FocusedComponent.h"
 #include "components/HealthComponent.h"
 #include "enemies/bosses/BossHUDWidget.h"
+#include "enemies/bosses/StatueBossHand.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "systems/CreditRoll.h"
@@ -122,15 +123,27 @@ void ABaseBoss::HandleDeath()
 	{
 		CreditRollWidget->SetVisibility(ESlateVisibility::Visible);
 		if (auto AB = Cast<UCreditRoll>(CreditRollWidget)) AB->PlayAnimation(AB->Roll);
-		GetWorldTimerManager().SetTimer(BaseBossTimerHandle, [this]()
+		
+		// 손 파괴 
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStatueBossHand::StaticClass(), FoundActors);
+		for (AActor* Actor : FoundActors)
 		{
-			FName MenuLevelName = TEXT("MenuMap");
-			FString GameModePath = AMenuGameMode::StaticClass()->GetPathName(); 
-			// 예시 반환값: "/Script/YourProjectName.MenuGameMode"
-
-			FString Options = FString::Printf(TEXT("Game=%s"), *GameModePath);
-			UGameplayStatics::OpenLevel(GetWorld(), FName("MenuMap"), true, *Options);
-		}, 5.0f, false);
+			if (Actor && !Actor->IsPendingKill())
+			{
+				Actor->Destroy();
+			}
+		}
+		
+		// GetWorldTimerManager().SetTimer(BaseBossTimerHandle, [this]()
+		// {
+		// 	FName MenuLevelName = TEXT("MenuMap");
+		// 	FString GameModePath = AMenuGameMode::StaticClass()->GetPathName(); 
+		// 	// 예시 반환값: "/Script/YourProjectName.MenuGameMode"
+		//
+		// 	FString Options = FString::Printf(TEXT("Game=%s"), *GameModePath);
+		// 	UGameplayStatics::OpenLevel(GetWorld(), FName("MenuMap"), true, *Options);
+		// }, 5.0f, false);
 	}, 4.0f, false);
 }
 

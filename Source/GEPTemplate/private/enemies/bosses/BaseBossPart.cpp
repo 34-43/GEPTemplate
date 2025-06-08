@@ -111,7 +111,7 @@ void ABaseBossPart::TickMovement(float DeltaTime)
 
 void ABaseBossPart::HandleDamaged()
 {
-	if (BaseBossCache) BaseBossCache->TotalHealthC->UpdateHealth(-40);
+	if (BaseBossCache) BaseBossCache->TotalHealthC->UpdateHealth(FMath::RandRange(4,8));
 	PRINT_LOG(TEXT("현재 보스 체력: %d"), BaseBossCache->TotalHealthC->CurrentHealth);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFxF, GetActorLocation());
 	UGameplayStatics::SpawnSound2D(GetWorld(), DamagedSfxF);
