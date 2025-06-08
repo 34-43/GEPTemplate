@@ -21,9 +21,10 @@ public:
 	AItemSample();
 
 	// 사용 종류
-	UPROPERTY(EditAnywhere, Category="Item Effect") int32 HealthDelta = 10.f;
+	UPROPERTY(EditAnywhere, Category="Item Effect") int32 HealthDelta = 0.f;
 	UPROPERTY(EditAnywhere, Category="Item Effect")	float StaminaDelta = 0.f;
 	UPROPERTY(EditAnywhere, Category="Item Effect")	int32 GoldDelta = 0;
+	UPROPERTY(EditAnywhere, Category = "Sound")	USoundBase* UseSound;
 	// 충돌
 	UFUNCTION()	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	// 아이템 사용

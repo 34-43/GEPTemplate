@@ -25,6 +25,7 @@
 #include "systems/GEPSaveGame.h"
 #include "systems/GameSettingsInstance.h"
 #include "systems/BgmPlayer.h"
+#include "allies/GameRestartUIWidget.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -331,6 +332,19 @@ void AMainCharacter::HandleInteractionHoldTick(float DeltaTime)
 // 상호작용 - 물체 탐색
 void AMainCharacter::UpdateInteractionFocus()
 {
+	// 캐릭터가 죽었으면 탐색하지 않음
+	if (bIsDead)
+	{
+		// 포커싱 중이던 대상이 있다면 해제
+		if (CurrentInteractionComponent)
+		{
+			CurrentInteractionComponent->ShowUI(false);
+			CurrentInteractionComponent->ShowHighlight(false);
+			CurrentInteractionComponent = nullptr;
+		}
+		return;
+	}
+	
 	// 이미 상호작용 중이면 탐색 생략
 	if (bIsInteracting && CurrentInteractionComponent) return;
 
@@ -638,11 +652,58 @@ bool AMainCharacter::ManageGold(int32 Delta)
 
 void AMainCharacter::ShowDeathUI()
 {
+	bIsDead = true;
 	if (UGameAlertUIWidget* AlertUI = Cast<UGameAlertUIWidget>(GameAlertUIWidget))
 	{
 		AlertUI->SetVisibility(ESlateVisibility::Visible);
-		AlertUI->PlayAlert(TEXT("LOTUS WITHERED"), FLinearColor::Red);
+		AlertUI->PlayAlert(TEXT("LOTUS WITHERED"), FLinearColor::Red,5);
 	}
+	// 카메라 멀리
+	SpringArmC->TargetArmLength = 500.f;
+	// 조작 제어
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		PC->SetInputMode(FInputModeUIOnly());
+		PC->bShowMouseCursor = true;
+		PC->FlushPressedKeys();
+	}
+	// 몇 초 뒤에 팝업 생성
+	FTimerHandle PopupTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(PopupTimerHandle, this, &AMainCharacter::ShowRestartPopup, 5.0f, false);
+}
+
+void AMainCharacter::ShowRestartPopup()
+{
+	if (UGameRestartUIWidget* Popup = CreateWidget<UGameRestartUIWidget>(GetWorld(), Restart_W))
+	{
+		Popup->AddToViewport();
+		Popup->OnRevive.AddDynamic(this, &AMainCharacter::HandleRestart);
+		Popup->OnMainMenu.AddDynamic(this, &AMainCharacter::HandleGoStartMenu);
+	}
+}
+
+void AMainCharacter::HandleRestart()
+{
+	// 현재 맵 이름 가져오기
+	FString CurrentMapName = GetWorld()->GetMapName();
+	// 접두사 제거 (PIE 환경일 경우 "UEDPIE_0_" 같은 접두어 있음)
+	CurrentMapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+	// 현재 맵 다시 로드
+	UGameplayStatics::OpenLevel(GetWorld(), FName(*CurrentMapName), true);
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PC)
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+}
+
+void AMainCharacter::HandleGoStartMenu()
+{
+	// 새로운 레벨을 로드합니다.
+	UGameplayStatics::OpenLevel(GetWorld(), "MenuMap", true);
 }
 
 void AMainCharacter::HandleDeath()
