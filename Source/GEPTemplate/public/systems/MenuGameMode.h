@@ -25,6 +25,9 @@ public:
 	// 팝업 생성
 	UFUNCTION(BlueprintCallable) void ShowSettings();
 	UFUNCTION(BlueprintCallable) void ShowHelp();
+
+	// 오픈월드 맵
+	UPROPERTY(VisibleAnywhere) FName WorldMap = FName(TEXT("World"));
 protected:
 	virtual void BeginPlay() override;
 

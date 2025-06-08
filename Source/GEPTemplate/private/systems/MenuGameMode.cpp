@@ -78,7 +78,7 @@ void AMenuGameMode::StartGame()
 	{
 		// 게임 모드를 설정하고, 새로운 레벨을 로드합니다.
 		const FString Options = FString::Printf(TEXT("?game=%s"), *GameModeToStart->GetPathName());
-		UGameplayStatics::OpenLevel(GetWorld(), "TemplateMap", true, *Options);
+		UGameplayStatics::OpenLevel(GetWorld(), WorldMap, true, *Options);
 		PRINT_LOG(TEXT("%s"), *Options);
 	}
 
